@@ -119,12 +119,17 @@ async function submitOpname() {
 }
 
 function clearOpnameForm() {
-    document.getElementById('opProduk').value = ''; 
-    document.getElementById('opProduk').dataset.value = '';
-    document.getElementById('opQtySistem').value = ''; 
-    document.getElementById('opQtyFisik').value = '';
-    document.getElementById('opSelisih').value = ''; 
-    document.getElementById('opKeterangan').value = '';
+    const opProduk = document.getElementById('opProduk');
+    const opQtySistem = document.getElementById('opQtySistem');
+    const opQtyFisik = document.getElementById('opQtyFisik');
+    const opSelisih = document.getElementById('opSelisih');
+    const opKeterangan = document.getElementById('opKeterangan');
+
+    if (opProduk) { opProduk.value = ''; opProduk.dataset.value = ''; }
+    if (opQtySistem) opQtySistem.value = ''; 
+    if (opQtyFisik) opQtyFisik.value = '';
+    if (opSelisih) opSelisih.value = ''; 
+    if (opKeterangan) opKeterangan.value = '';
 }
 
 // --- STOCK MOVEMENT ---
@@ -150,10 +155,15 @@ async function submitMovement() {
 }
 
 function clearMovementForm() {
-    document.getElementById('movProduk').value = ''; 
-    document.getElementById('movProduk').dataset.value = '';
-    document.getElementById('movQtyIn').value = '0'; 
-    document.getElementById('movQtyOut').value = '0';
-    document.getElementById('movRef').value = ''; 
-    document.getElementById('movKeterangan').value = '';
+    const movProduk = document.getElementById('movProduk');
+    const movQtyIn = document.getElementById('movQtyIn');
+    const movQtyOut = document.getElementById('movQtyOut');
+    const movRef = document.getElementById('movRef');
+    const movKeterangan = document.getElementById('movKeterangan');
+
+    if (movProduk) { movProduk.value = ''; movProduk.dataset.value = ''; }
+    if (movQtyIn) movQtyIn.value = '0'; 
+    if (movQtyOut) movQtyOut.value = '0';
+    if (movRef) movRef.value = ''; 
+    if (movKeterangan) movKeterangan.value = '';
 }
