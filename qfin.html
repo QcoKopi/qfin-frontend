@@ -285,13 +285,15 @@ updateMasterData(table, tableResult.data);
 });
 }
 // Load Produk_ops (untuk Pembelian Biaya & Pembayaran Hutang)
-await loadProdukOps();
+loadProdukOps();
 }
 
 /**
  * Load Produk_ops dari cache atau GAS. Bisa dipanggil on-demand.
+ * Non-blocking: kalau sudah ada di cache, langsung return.
+ * Kalau kosong, fetch async tanpa blocking UI.
  */
-async function loadProdukOps(forceRefresh) {
+function loadProdukOps(forceRefresh) {
   if (!forceRefresh) {
     const cached = getCache('Produk_ops');
     if (cached && cached.length > 0) {
@@ -299,11 +301,34 @@ async function loadProdukOps(forceRefresh) {
       return;
     }
   }
-  const opsResult = await callGAS('getProdukOps', {}, 30000);
-  if (opsResult.success && opsResult.data) {
-    masterData.produkOps = opsResult.data;
-    setCache('Produk_ops', opsResult.data);
+  callGAS('getProdukOps', {}, 30000).then(function(opsResult) {
+    if (opsResult.success && opsResult.data) {
+      masterData.produkOps = opsResult.data;
+      setCache('Produk_ops', opsResult.data);
+    }
+  });
+}
+
+/**
+ * Ensure Produk_ops terisi sebelum dropdown dibuka.
+ * Kalau kosong, fetch lalu tampilkan notifikasi ke user.
+ */
+function ensureProdukOpsLoaded() {
+  const cached = getCache('Produk_ops');
+  if (cached && cached.length > 0) {
+    masterData.produkOps = cached;
+    return;
   }
+  if (masterData.produkOps && masterData.produkOps.length > 0) return;
+  callGAS('getProdukOps', {}, 30000).then(function(opsResult) {
+    if (opsResult.success && opsResult.data) {
+      masterData.produkOps = opsResult.data;
+      setCache('Produk_ops', opsResult.data);
+      showAlert('info', 'Daftar barang ops berhasil dimuat (' + opsResult.data.length + ' item). Silakan klik + Tambah Barang.', 'pembelianAlert');
+    } else {
+      showAlert('warning', 'Gagal memuat daftar barang ops: ' + (opsResult.message || 'unknown'), 'pembelianAlert');
+    }
+  });
 }
 function updateMasterData(table, data) {
 switch(table) {
@@ -347,11 +372,6 @@ dataType = 'produkOps';
 }
 }
 let data = masterData[dataType] || [];
-// On-demand fetch kalau produkOps kosong
-if (dataType === 'produkOps' && data.length === 0) {
-  await loadProdukOps();
-  data = masterData.produkOps || [];
-}
 const isPemCOA = (dataType === 'coa' && inputId === 'pemCOA');
 if (isPemCOA) {
   const kodeTrx = document.getElementById('pemKodeTransaksi').value;
@@ -437,7 +457,7 @@ document.getElementById('tab-' + tabName).classList.add('active');
 if (btn) btn.classList.add('active');
 setDefaultDates();
 if (tabName === 'preview') updatePreviewStats();
-if (tabName === 'pembelian') { clearPembelianForm(); loadProdukOps(); }
+if (tabName === 'pembelian') { clearPembelianForm(); }
 if (tabName === 'penjualan') { clearPenjualanForm(); autoFillNextDoc('penInvoice', 'Penjualan_App', 'no_invoice'); loadStockCacheForPenjualan(); }
 if (tabName === 'stock' && stockTableData === null) loadStockTable();
 if (tabName === 'master-data') { loadMasterDataList(); onMasterDataJenisChange(); }
@@ -766,8 +786,9 @@ if (result.success) {
 showAlert('success', 'Pembelian berhasil! ID: ' + result.id_pembelian, 'pembelianAlert');
 // Sync Produk_ops kalau transaksi Pembelian Biaya
 if (kodeTransaksi === 'Pembelian Biaya') {
-await callGAS('syncProdukOps', {}, 30000);
-await loadProdukOps(true);
+callGAS('syncProdukOps', {}, 30000).then(function() {
+  loadProdukOps(true);
+});
 }
 clearPembelianForm();
 }
@@ -807,6 +828,10 @@ function clearPembelianForm() {
   // Clear semua detail barang agar tidak tercampur sumber data
   document.getElementById('pembelianDetails').innerHTML = '';
   pembelianDetails = [];
+  // Preload Produk_ops kalau diperlukan (async, tidak blocking)
+  if (kode === 'Pembelian Biaya' || kode === 'Pembayaran Hutang') {
+    ensureProdukOpsLoaded();
+  }
 }
 // ============================================================
 // PENJUALAN - DENGAN FIX UNTUK HOUSEBLEND & TYPE PEMBAYARAN
