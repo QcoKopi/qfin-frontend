@@ -310,8 +310,8 @@ result.data.forEach(s => { stockCache[s.id_produk] = parseFloat(s.saldo) || 0; }
 }
 }
 function parseCOACode(coaStr) {
-  const num = parseInt((coaStr || '').toString().replace(/-/g, ''), 10);
-  return isNaN(num) ? 0 : num;
+  const match = (coaStr || '').toString().match(/^(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
 }
 function searchDropdown(inputId, dataType) {
 const input = document.getElementById(inputId);
