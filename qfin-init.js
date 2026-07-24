@@ -18,4 +18,4 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('mdJenis') && typeof onMasterDataJenisChange === 'function') {
         onMasterDataJenisChange();
     }
-});
+})
