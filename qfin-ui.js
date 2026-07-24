@@ -208,4 +208,3 @@ function downloadCsv(filename, headers, rows) {
     a.click(); 
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-}
