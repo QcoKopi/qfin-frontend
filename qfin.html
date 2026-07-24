@@ -1602,7 +1602,12 @@ const detail = piutangReconDetailCache[c.customer];
 if (!detail) {
 html += `<tr><td></td><td colspan="4" style="color:var(--gray);">Memuat rincian...</td></tr>`;
 } else {
-html += detail.map(r => `<tr style="background:#f9fafb;"><td></td><td colspan="2" style="font-size:13px;">${r.no_invoice_piutang} - ${r.tanggal}</td><td style="text-align:right;font-size:13px;">${formatNumber(r.jumlah)}</td><td style="font-size:13px;font-weight:bold;color:${r.status === 'Lunas' ? 'var(--success)' : (r.status === 'CEK JUMLAH' ? 'var(--warning)' : 'var(--danger)')};">${r.status}${r.no_invoice_pembayaran ? ' - ' + r.no_invoice_pembayaran : ''}</td></tr>`).join('');
+html += detail.map(r => {
+  const statusLabel = r.status === 'DownPayment' && r.sisa > 0
+    ? r.status + ' — Sisa ' + formatNumber(r.sisa)
+    : r.status;
+  return `<tr style="background:#f9fafb;"><td></td><td colspan="2" style="font-size:13px;">${r.no_invoice_piutang} - ${r.tanggal}</td><td style="text-align:right;font-size:13px;">${formatNumber(r.jumlah)}</td><td style="font-size:13px;font-weight:bold;color:${r.status === 'Lunas' ? 'var(--success)' : (r.status === 'CEK JUMLAH' ? 'var(--warning)' : 'var(--danger)')};">${statusLabel}${r.no_invoice_pembayaran ? ' - ' + r.no_invoice_pembayaran : ''}</td></tr>`;
+}).join('');
 }
 }
 return html;
