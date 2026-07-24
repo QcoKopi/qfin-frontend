@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QFin - Financial Management System</title>
+    <link rel="stylesheet" href="qfin-style.css">
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+    <div class="app-container">
+        <div class="header">
+            <div><h1>QFin</h1><div class="subtitle">Financial Management System</div></div>
+            <div class="header-actions">
+                <input type="url" class="gas-url-input" id="gasUrl" placeholder="https://script.google.com/macros/s/.../exec" value="https://script.google.com/macros/s/AKfycbzykNrUHcDjtk2ktmdARMpmhmRUWXJ2zwFP3Cm-PEcHeNNwmABuSAXhT0n-9jAmyc8/exec">
+                <button class="btn btn-primary" onclick="saveGasUrl()"><span>Save URL</span></button>
+                <button class="btn btn-secondary" onclick="loadAllData()"><span>Refresh</span></button>
+                <button class="btn btn-danger" onclick="clearCacheAndReload()"><span>Clear Cache</span></button>
+            </div>
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('assembly', this)">Assembly</button>
+            <button class="nav-tab" onclick="switchTab('pembelian', this)">Pembelian</button>
+            <button class="nav-tab" onclick="switchTab('penjualan', this)">Penjualan</button>
+            <button class="nav-tab" onclick="switchTab('kas-masuk', this)">Kas Masuk</button>
+            <button class="nav-tab" onclick="switchTab('stock', this)">Stock</button>
+            <button class="nav-tab" onclick="switchTab('opname', this)">Stock Opname</button>
+            <button class="nav-tab" onclick="switchTab('movement', this)">Stock Movement</button>
+            <button class="nav-tab" onclick="switchTab('master-data', this)">Master Data</button>
+            <button class="nav-tab" onclick="switchTab('pricelist', this)">Pricelist</button>
+            <button class="nav-tab admin-only" id="navtab-neraca" onclick="switchTab('neraca', this)" style="display:none;">Neraca</button>
+            <button class="nav-tab admin-only" id="navtab-rugilaba" onclick="switchTab('rugilaba', this)" style="display:none;">Rugi Laba</button>
+            <button class="nav-tab admin-only" id="navtab-bukubesar" onclick="switchTab('bukubesar', this)" style="display:none;">Buku Besar</button>
+            <button class="nav-tab admin-only" id="navtab-adminlogin" onclick="showAdminLoginPrompt()">🔒 Admin</button>
+            <button class="nav-tab" onclick="switchTab('piutanghutang', this)">Piutang & Hutang</button>
+            <button class="nav-tab" onclick="switchTab('preview', this)">Preview</button>
+        </div>
+        <div class="content-area" id="contentArea">
+            <!-- Tabs loaded dynamically -->
+        </div>
+    </div>
+
+    <!-- Core Modules -->
+    <script src="qfin-core.js"></script>
+    <script src="qfin-ui.js"></script>
+    <script src="qfin-auth.js"></script>
+    
+    <!-- Feature Modules -->
+    <script src="qfin-assembly.js"></script>
+    <script src="qfin-purchasing.js"></script>
+    <script src="qfin-sales.js"></script>
+    <script src="qfin-finance.js"></script>
+    <script src="qfin-inventory.js"></script>
+    <script src="qfin-masterdata.js"></script>
+    <script src="qfin-pricelist.js"></script>
+    <script src="qfin-reports.js"></script>
+    
+    <!-- Init -->
+    <script src="qfin-init.js"></script>
+</body>
+</html>
