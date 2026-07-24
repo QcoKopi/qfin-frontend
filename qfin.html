@@ -364,13 +364,13 @@ if (stockCache) data = data.filter(item => (stockCache[item.id_produk] || 0) > 0
 }
 const maxResults = (dataType === 'coa') ? 500 : 20;
 const filtered = data.filter(item => {
-const label = (item.nama_produk || item.nama_customer || item.nama_supplier || item.nama_salesman || item.nama_akun || item.nama_cash || item.nama_resep || item.nama_kemasan || item.nama || '').toLowerCase();
+const label = (item.nama_produk || item.nama_customer || item.nama_supplier || item.nama_salesman || item.nama_akun || item.nama_cash || item.nama_resep || item.nama_kemasan || item.nama_barang || item.nama || '').toLowerCase();
 const value = (item.id_produk || item.id_customer || item.id_supplier || item.id_salesman || item.coa || item.id_cash || item.id_resep || item.id_kemasan || item.id || '').toLowerCase();
 return label.includes(searchTerm) || value.includes(searchTerm);
 }).slice(0, maxResults);
 list.innerHTML = filtered.map(item => {
 const value = item.id_produk || item.id_customer || item.id_supplier || item.id_salesman || item.coa || item.id_cash || item.id_resep || item.id_kemasan || item.id;
-const label = item.nama_produk || item.nama_customer || item.nama_supplier || item.nama_salesman || item.nama_akun || item.nama_cash || item.nama_resep || item.nama_kemasan || item.nama;
+const label = item.nama_produk || item.nama_customer || item.nama_supplier || item.nama_salesman || item.nama_akun || item.nama_cash || item.nama_resep || item.nama_kemasan || item.nama_barang || item.nama;
 const stockNote = (isPenjualanBarang && stockCache && stockCache[value] !== undefined) ? ` — stok ${formatNumber(stockCache[value])}` : '';
 return `<div class="dropdown-item" onclick="selectDropdown('${inputId}', '${value}', '${label.replace(/'/g, "\\'")}')">${label} (${value})${stockNote}</div>`;
 }).join('');
@@ -543,7 +543,7 @@ rawReadonly = 'readonly style="background:#f4f4f4;"';
 priceReadonly = 'readonly style="background:#f4f4f4;"';
 }
 div.innerHTML = `
-<div class="detail-row-header"><span><strong>Bahan #${id + 1}</strong>${tag}</span><button class="btn-remove" onclick="removeAssemblyDetail(${id})">Hapus</button></div><div class="form-grid"><div class="form-group"><label class="mandatory-label">Raw Material</label><div class="searchable-dropdown"><input type="text" id="asm-raw-${id}" placeholder="Cari raw material..." oninput="searchDropdown('asm-raw-${id}', 'products')" onfocus="showDropdown('asm-raw-${id}')" ${rawReadonly}><div class="dropdown-list" id="asm-raw-${id}-list"></div></div></div><div class="form-group"><label class="mandatory-label">Jumlah (kg)</label><input type="number" id="asm-raw-qty-${id}" step="0.01" placeholder="0.00" onchange="onAssemblyDetailQtyChange()" ${qtyReadonly}></div><div class="form-group"><label class="mandatory-label">Harga per kg</label><input type="number" id="asm-raw-price-${id}" step="1000" placeholder="0" onchange="calculateAssemblyHPP()" ${priceReadonly}></div></div>`;
+<div class="detail-row-header"><span><strong>Bahan #${id + 1}</strong>${tag}</span><button class="btn-remove" onclick="removeAssemblyDetail(${id})">Hapus</button></div><div class="form-grid"><div class="form-group"><label class="mandatory-label">Raw Material</label><div class="searchable-dropdown"><input type="text" id="asm-raw-${id}" placeholder="Cari raw material..." ${rawReadonly}><div class="dropdown-list" id="asm-raw-${id}-list"></div></div></div><div class="form-group"><label class="mandatory-label">Jumlah (kg)</label><input type="number" id="asm-raw-qty-${id}" step="0.01" placeholder="0.00" onchange="onAssemblyDetailQtyChange()" ${qtyReadonly}></div><div class="form-group"><label class="mandatory-label">Harga per kg</label><input type="number" id="asm-raw-price-${id}" step="1000" placeholder="0" onchange="calculateAssemblyHPP()" ${priceReadonly}></div></div>`;
 document.getElementById('assemblyDetails').appendChild(div);
 assemblyDetails.push(id);
 return id;
