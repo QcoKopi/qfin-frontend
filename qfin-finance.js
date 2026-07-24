@@ -74,14 +74,23 @@ function onKasKodeTransaksiChange() {
 }
 
 function clearKasMasukForm() {
-    document.getElementById('kmNoDokumen').value = '';
-    document.getElementById('kmSales').value = '';
-    document.getElementById('kmLawan').value = '';
-    document.getElementById('kmJumlah').value = '';
-    document.getElementById('kmKeterangan').value = '';
-    document.getElementById('kmInvoiceInfo').textContent = '';
-    document.getElementById('kmSumberDana').value = '';
-    document.getElementById('kmTerminGroup').style.display = 'none';
+    const kmNoDokumen = document.getElementById('kmNoDokumen');
+    const kmSales = document.getElementById('kmSales');
+    const kmLawan = document.getElementById('kmLawan');
+    const kmJumlah = document.getElementById('kmJumlah');
+    const kmKeterangan = document.getElementById('kmKeterangan');
+    const kmInvoiceInfo = document.getElementById('kmInvoiceInfo');
+    const kmSumberDana = document.getElementById('kmSumberDana');
+    const kmTerminGroup = document.getElementById('kmTerminGroup');
+
+    if (kmNoDokumen) kmNoDokumen.value = '';
+    if (kmSales) kmSales.value = '';
+    if (kmLawan) kmLawan.value = '';
+    if (kmJumlah) kmJumlah.value = '';
+    if (kmKeterangan) kmKeterangan.value = '';
+    if (kmInvoiceInfo) kmInvoiceInfo.textContent = '';
+    if (kmSumberDana) kmSumberDana.value = '';
+    if (kmTerminGroup) kmTerminGroup.style.display = 'none';
 }
 
 // --- PIUTANG & HUTANG ---
