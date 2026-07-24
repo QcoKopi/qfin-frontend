@@ -41,11 +41,12 @@ function switchTab(tabName, btn) {
     if (tabInit[tabName]) tabInit[tabName]();
 }
 
-async function autoFillNextDoc(inputId, table, field, filterExpr) {
+async function autoFillNextDoc(inputId, table, field, filterExpr, prefix) {
     const input = document.getElementById(inputId);
     if (!input) return;
     const params = { table, field };
     if (filterExpr) params.filter = filterExpr;
+    if (prefix) params.prefix = prefix;
     const result = await callGAS('getNextDocNumber', params);
     if (!result.success || !result.next) return;
     const currentVal = input.value.trim();
