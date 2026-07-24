@@ -666,10 +666,12 @@ if (result.success) { showAlert('success', 'Pembelian berhasil! ID: ' + result.i
 else showAlert('danger', 'Gagal: ' + result.message, 'pembelianAlert');
 }
 function clearPembelianForm() {
-document.getElementById('pemNoDokumen').value = ''; document.getElementById('pemSupplier').value = '';
-document.getElementById('pemCOA').value = ''; document.getElementById('pembelianDetails').innerHTML = '';
-pembelianDetails = [];
-setTimeout(() => autoFillNextDoc('pemNoDokumen', 'Pembelian_App', 'no_dokumen', 'NOT_SAMPLE'), 50);
+  document.getElementById('pemNoDokumen').value = ''; 
+  document.getElementById('pemSupplier').value = '';
+  document.getElementById('pemCOA').value = ''; 
+  document.getElementById('pembelianDetails').innerHTML = '';
+  pembelianDetails = [];
+  setTimeout(() => autoFillNextDoc('pemNoDokumen', 'Pembelian_App', 'no_dokumen', 'NOT_SAMPLE'), 50);
 }
 // ============================================================
 // PENJUALAN - DENGAN FIX UNTUK HOUSEBLEND & TYPE PEMBAYARAN
