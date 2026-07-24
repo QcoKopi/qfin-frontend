@@ -60,6 +60,16 @@ async function submitPembelian() {
         showAlert('danger', 'Tambahkan minimal 1 barang', 'pembelianAlert'); 
         return;
     }
+
+    const pemSalesman = document.getElementById('pemSalesman');
+    const pemNoDokumen = document.getElementById('pemNoDokumen');
+    const pemKodeTransaksi = document.getElementById('pemKodeTransaksi');
+    const pemCOA = document.getElementById('pemCOA');
+    const pemSupplier = document.getElementById('pemSupplier');
+    const pemStatusBayar = document.getElementById('pemStatusBayar');
+    const pemDate = document.getElementById('pemDate');
+    const pemCostCenter = document.getElementById('pemCostCenter');
+
     const details = pembelianDetails.map(id => ({
         nama_barang: document.getElementById(`pem-barang-${id}`)?.value || '',
         id_produk: document.getElementById(`pem-barang-${id}`)?.dataset.value || '',
@@ -68,18 +78,19 @@ async function submitPembelian() {
         total: (parseFloat(document.getElementById(`pem-qty-${id}`)?.value) || 0) * (parseFloat(document.getElementById(`pem-price-${id}`)?.value) || 0),
         kode_lot: document.getElementById(`pem-lot-${id}`)?.value || ''
     })).filter(d => d.nama_barang);
+
     const total = details.reduce((sum, d) => sum + d.total, 0);
     const data = {
-        tanggal: document.getElementById('pemDate').value, 
-        cost_center: document.getElementById('pemCostCenter').value,
-        salesman: document.getElementById('pemSalesman').value, 
-        no_dokumen: document.getElementById('pemNoDokumen').value,
-        kode_transaksi: document.getElementById('pemKodeTransaksi').value, 
-        coa: document.getElementById('pemCOA').value,
-        nama_supplier: document.getElementById('pemSupplier').value, 
+        tanggal: pemDate?.value || '', 
+        cost_center: pemCostCenter?.value || 'Q.Co',
+        salesman: pemSalesman?.value || '', 
+        no_dokumen: pemNoDokumen?.value || '',
+        kode_transaksi: pemKodeTransaksi?.value || '', 
+        coa: pemCOA?.value || '',
+        nama_supplier: pemSupplier?.value || '', 
         notes: '', 
         total: total,
-        status_bayar: document.getElementById('pemStatusBayar').value, 
+        status_bayar: pemStatusBayar?.value || '', 
         details: details
     };
     const result = await callGAS('submitPembelian', data);
@@ -91,10 +102,16 @@ async function submitPembelian() {
 }
 
 function clearPembelianForm() {
-    document.getElementById('pemNoDokumen').value = ''; 
-    document.getElementById('pemSupplier').value = '';
-    document.getElementById('pemCOA').value = ''; 
-    document.getElementById('pembelianDetails').innerHTML = '';
+    const pemNoDokumen = document.getElementById('pemNoDokumen');
+    const pemSupplier = document.getElementById('pemSupplier');
+    const pemCOA = document.getElementById('pemCOA');
+    const pembelianDetailsEl = document.getElementById('pembelianDetails');
+
+    if (pemNoDokumen) pemNoDokumen.value = ''; 
+    if (pemSupplier) pemSupplier.value = '';
+    if (pemCOA) pemCOA.value = ''; 
+    if (pembelianDetailsEl) pembelianDetailsEl.innerHTML = '';
+
     pembelianDetails = [];
     setTimeout(() => autoFillNextDoc('pemNoDokumen', 'Pembelian_App', 'no_dokumen', 'NOT_SAMPLE'), 50);
 }
