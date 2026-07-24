@@ -285,16 +285,25 @@ updateMasterData(table, tableResult.data);
 });
 }
 // Load Produk_ops (untuk Pembelian Biaya & Pembayaran Hutang)
-const cachedOps = getCache('Produk_ops');
-if (cachedOps) {
-masterData.produkOps = cachedOps;
-} else {
-const opsResult = await callGAS('getProdukOps', {}, 30000);
-if (opsResult.success && opsResult.data) {
-masterData.produkOps = opsResult.data;
-setCache('Produk_ops', opsResult.data);
+await loadProdukOps();
 }
-}
+
+/**
+ * Load Produk_ops dari cache atau GAS. Bisa dipanggil on-demand.
+ */
+async function loadProdukOps(forceRefresh) {
+  if (!forceRefresh) {
+    const cached = getCache('Produk_ops');
+    if (cached && cached.length > 0) {
+      masterData.produkOps = cached;
+      return;
+    }
+  }
+  const opsResult = await callGAS('getProdukOps', {}, 30000);
+  if (opsResult.success && opsResult.data) {
+    masterData.produkOps = opsResult.data;
+    setCache('Produk_ops', opsResult.data);
+  }
 }
 function updateMasterData(table, data) {
 switch(table) {
@@ -338,6 +347,11 @@ dataType = 'produkOps';
 }
 }
 let data = masterData[dataType] || [];
+// On-demand fetch kalau produkOps kosong
+if (dataType === 'produkOps' && data.length === 0) {
+  await loadProdukOps();
+  data = masterData.produkOps || [];
+}
 const isPemCOA = (dataType === 'coa' && inputId === 'pemCOA');
 if (isPemCOA) {
   const kodeTrx = document.getElementById('pemKodeTransaksi').value;
@@ -423,7 +437,7 @@ document.getElementById('tab-' + tabName).classList.add('active');
 if (btn) btn.classList.add('active');
 setDefaultDates();
 if (tabName === 'preview') updatePreviewStats();
-if (tabName === 'pembelian') { clearPembelianForm(); }
+if (tabName === 'pembelian') { clearPembelianForm(); loadProdukOps(); }
 if (tabName === 'penjualan') { clearPenjualanForm(); autoFillNextDoc('penInvoice', 'Penjualan_App', 'no_invoice'); loadStockCacheForPenjualan(); }
 if (tabName === 'stock' && stockTableData === null) loadStockTable();
 if (tabName === 'master-data') { loadMasterDataList(); onMasterDataJenisChange(); }
@@ -753,11 +767,7 @@ showAlert('success', 'Pembelian berhasil! ID: ' + result.id_pembelian, 'pembelia
 // Sync Produk_ops kalau transaksi Pembelian Biaya
 if (kodeTransaksi === 'Pembelian Biaya') {
 await callGAS('syncProdukOps', {}, 30000);
-const opsResult = await callGAS('getProdukOps', {}, 30000);
-if (opsResult.success && opsResult.data) {
-masterData.produkOps = opsResult.data;
-setCache('Produk_ops', opsResult.data);
-}
+await loadProdukOps(true);
 }
 clearPembelianForm();
 }
