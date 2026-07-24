@@ -113,5 +113,5 @@ function clearPembelianForm() {
     if (pembelianDetailsEl) pembelianDetailsEl.innerHTML = '';
 
     pembelianDetails = [];
-    setTimeout(() => autoFillNextDoc('pemNoDokumen', 'Pembelian_App', 'no_dokumen', 'NOT_SAMPLE', 'FP'), 50);
+    autoFillNextDoc('pemNoDokumen', 'Pembelian_App', 'no_dokumen', 'NOT_SAMPLE', 'FP');
 }
