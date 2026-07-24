@@ -673,6 +673,23 @@ function clearPembelianForm() {
   pembelianDetails = [];
   setTimeout(() => autoFillNextDoc('pemNoDokumen', 'Pembelian_App', 'no_dokumen', 'NOT_SAMPLE'), 50);
 }
+  function onPemKodeTransaksiChange() {
+  const kode = document.getElementById('pemKodeTransaksi').value;
+  const isPembelian = (kode === 'Pembelian');
+  document.querySelectorAll('#pembelianDetails .form-group label').forEach(lbl => {
+    if (isPembelian) {
+      if (lbl.dataset.wasMandatory === 'true') {
+        lbl.classList.add('mandatory-label');
+        delete lbl.dataset.wasMandatory;
+      }
+    } else {
+      if (lbl.classList.contains('mandatory-label')) {
+        lbl.dataset.wasMandatory = 'true';
+        lbl.classList.remove('mandatory-label');
+      }
+    }
+  });
+}
 // ============================================================
 // PENJUALAN - DENGAN FIX UNTUK HOUSEBLEND & TYPE PEMBAYARAN
 // ============================================================
