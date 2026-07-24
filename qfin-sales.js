@@ -428,19 +428,30 @@ function printLastInvoice() {
 }
 
 function clearPenjualanForm() {
-    document.getElementById('penInvoice').value = ''; 
-    document.getElementById('penCustomer').value = '';
-    document.getElementById('penSalesman').value = ''; 
-    document.getElementById('penjualanDetails').innerHTML = '';
-    document.getElementById('penKodeTransaksi').value = 'Penjualan';
+    const penInvoice = document.getElementById('penInvoice');
+    const penCustomer = document.getElementById('penCustomer');
+    const penSalesman = document.getElementById('penSalesman');
+    const penjualanDetailsEl = document.getElementById('penjualanDetails');
+    const penKodeTransaksi = document.getElementById('penKodeTransaksi');
     const typeBayar = document.getElementById('penTypeBayar');
-    typeBayar.value = '';
-    document.getElementById('penTotalBayar').value = '';
-    document.getElementById('penTotalBayarGroup').style.display = 'none';
-    document.getElementById('penPembayaranSection').style.display = 'none';
-    document.getElementById('btnPrintInvoice').style.display = 'none';
+    const penTotalBayar = document.getElementById('penTotalBayar');
+    const penTotalBayarGroup = document.getElementById('penTotalBayarGroup');
+    const penPembayaranSection = document.getElementById('penPembayaranSection');
+    const btnPrintInvoice = document.getElementById('btnPrintInvoice');
+    const penjualanSummary = document.getElementById('penjualanSummary');
+
+    if (penInvoice) penInvoice.value = ''; 
+    if (penCustomer) penCustomer.value = '';
+    if (penSalesman) penSalesman.value = ''; 
+    if (penjualanDetailsEl) penjualanDetailsEl.innerHTML = '';
+    if (penKodeTransaksi) penKodeTransaksi.value = 'Penjualan';
+    if (typeBayar) typeBayar.value = '';
+    if (penTotalBayar) penTotalBayar.value = '';
+    if (penTotalBayarGroup) penTotalBayarGroup.style.display = 'none';
+    if (penPembayaranSection) penPembayaranSection.style.display = 'none';
+    if (btnPrintInvoice) btnPrintInvoice.style.display = 'none';
     lastSubmittedSaleData = null;
     penjualanDetails = []; 
-    document.getElementById('penjualanSummary').style.display = 'none';
+    if (penjualanSummary) penjualanSummary.style.display = 'none';
     autoFillNextDoc('penInvoice', 'Penjualan_App', 'no_invoice');
 }
