@@ -210,46 +210,49 @@ function saveGasUrl() {
 const url = document.getElementById('gasUrl').value;
 if (url) { localStorage.setItem('qfin_gas_url', url); showAlert('success', 'GAS URL saved'); }
 }
-// [P2 FIXED v1] callGAS: JSONP → fetch() POST (CORS). Body lebih besar, tidak menumpuk script tags.
+// [P2 FIXED v1] callGAS: JSONP dengan cleanup agresif (tidak menumpuk script tags)
+let __qfinJsonpSeq = 0;
 function callGAS(action, data = {}, timeoutMs = 60000) {
 return new Promise((resolve) => {
 const url = getGasUrl();
 if (!url) { showAlert('danger', 'GAS URL not configured'); resolve({ success: false }); return; }
 showLoading(true);
-
-const payload = Object.assign({}, data, { action: action });
+const callbackName = '__qfin_cb_' + (Date.now()) + '_' + (__qfinJsonpSeq++);
+const qs = new URLSearchParams();
+qs.set('action', action);
+qs.set('callback', callbackName);
 const adminToken = sessionStorage.getItem('qfin_admin_token');
-if (adminToken) payload.admin_token = adminToken;
-
-const controller = new AbortController();
-const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-fetch(url, {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify(payload),
-signal: controller.signal
-})
-.then(r => {
-if (!r.ok) throw new Error('HTTP ' + r.status);
-return r.json();
-})
-.then(result => {
+if (adminToken) qs.set('admin_token', adminToken);
+Object.keys(data).forEach(key => {
+const val = data[key];
+if (val === undefined || val === null) return;
+qs.set(key, (typeof val === 'object') ? JSON.stringify(val) : String(val));
+});
+const script = document.createElement('script');
+let settled = false;
+const cleanup = () => {
+try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
+if (script.parentNode) script.parentNode.removeChild(script);
 clearTimeout(timeoutId);
+};
+const finish = (result) => {
+if (settled) return;
+settled = true;
+cleanup();
 showLoading(false);
 resolve(result);
-})
-.catch(err => {
-clearTimeout(timeoutId);
-showLoading(false);
-if (err.name === 'AbortError') {
+};
+const timeoutId = setTimeout(() => {
 showAlert('danger', 'Request timeout - cek GAS URL / deployment access.');
-resolve({ success: false, message: 'Request timeout' });
-} else {
-showAlert('danger', 'Gagal terhubung ke GAS: ' + err.message);
-resolve({ success: false, message: err.message });
-}
-});
+finish({ success: false, message: 'Request timeout' });
+}, timeoutMs);
+window[callbackName] = function(result) { finish(result); };
+script.onerror = function() {
+showAlert('danger', 'Gagal terhubung ke GAS. Cek GAS URL & deployment (Anyone can access).');
+finish({ success: false, message: 'Network error calling GAS' });
+};
+script.src = url + (url.includes('?') ? '&' : '?') + qs.toString();
+document.head.appendChild(script);
 });
 }
 function getCache(key) {
