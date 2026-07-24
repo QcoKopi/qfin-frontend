@@ -52,7 +52,8 @@ async function autoFillNextDoc(inputId, table, field, filterExpr, prefix) {
     const currentVal = input.value.trim();
     const isInvoiceFormat = /^INV/i.test(currentVal);
     const isPembelianFormat = /^(FP|PB|PH|STOK)/i.test(currentVal);
-    const shouldFill = !currentVal ||
+    // FIX: When prefix is specified, always fill (ignore current format mismatch)
+    const shouldFill = !currentVal || prefix ||
         (table === 'Pembelian_App' && isInvoiceFormat) ||
         (table === 'Penjualan_App' && isPembelianFormat);
     if (shouldFill) input.value = result.next;
