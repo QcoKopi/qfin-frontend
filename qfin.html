@@ -463,6 +463,15 @@ if (!window.__piutangHutangLoaded) { window.__piutangHutangLoaded = true; loadPi
 if (!window.__piutangReconLoaded) { window.__piutangReconLoaded = true; loadPiutangReconciliationSummary(); }
 if (!window.__hutangReconLoaded) { window.__hutangReconLoaded = true; loadHutangReconciliationSummary(); }
 }
+// [fix #6] Pricelist sebelumnya cuma tampil kalau tombol Generate ditekan
+// di sesi itu juga — begitu pindah tab/reload, tabelnya kosong lagi
+// walau datanya masih ada di cache. Sekarang auto-load dari cache begitu
+// tab ini pertama kali dibuka.
+if (tabName === 'pricelist' && !window.__pricelistLoaded) {
+window.__pricelistLoaded = true;
+const cached = getCache('pricelist_data');
+if (cached) { pricelistData = cached; renderPricelistTable(); }
+}
 }
 async function autoFillNextDoc(inputId, table, field, filterExpr) {
 const input = document.getElementById(inputId);
@@ -998,9 +1007,15 @@ if (hppInput) hppInput.value = hpp;
 }
 // Apply harga jual
 const priceInput = document.getElementById(`pen-price-${id}`);
-if (priceInput && priceResult.success && priceResult.data && priceResult.data.harga_jual) {
-priceInput.value = priceResult.data.harga_jual;
+if (priceInput) {
+// [fix #4] Simpan harga pricelist di dataset — dipakai calculatePenjualanItemTotal
+// untuk kasih reminder kalau harga diedit lebih murah dari ini.
+const pricelistHarga = (priceResult.success && priceResult.data && priceResult.data.harga_jual) ? priceResult.data.harga_jual : 0;
+priceInput.dataset.pricelistPrice = pricelistHarga;
+if (pricelistHarga) {
+priceInput.value = pricelistHarga;
 calculatePenjualanItemTotal(id);
+}
 }
 // Apply batch list
 const datalist = document.getElementById(`pen-batch-list-${id}`);
@@ -1060,10 +1075,17 @@ showAlert('warning', `Jumlah dibatasi ke ${formatNumber(maxStok)} - sisa stok un
 }
 function calculatePenjualanItemTotal(id) {
 const qty = parseFloat(document.getElementById(`pen-qty-${id}`)?.value) || 0;
-const price = parseFloat(document.getElementById(`pen-price-${id}`)?.value) || 0;
+const priceInput = document.getElementById(`pen-price-${id}`);
+const price = parseFloat(priceInput?.value) || 0;
 const diskon = parseFloat(document.getElementById(`pen-diskon-${id}`)?.value) || 0;
 const total = (qty * price) - diskon;
 const totalInput = document.getElementById(`pen-total-${id}`); if (totalInput) totalInput.value = total;
+// [fix #4] Reminder kalau harga diketik lebih murah dari pricelist —
+// cuma pengingat, tidak menghalangi submit.
+const pricelistHarga = parseFloat(priceInput?.dataset.pricelistPrice) || 0;
+if (pricelistHarga > 0 && price > 0 && price < pricelistHarga) {
+showAlert('warning', `Harga barang #${id + 1} (Rp ${formatNumber(price)}) lebih murah dari pricelist (Rp ${formatNumber(pricelistHarga)}). Apakah Anda yakin?`, 'penjualanAlert');
+}
 calculatePenjualanSummary();
 }
 function calculatePenjualanSummary() {
@@ -1141,7 +1163,7 @@ const totalInvoice = subTotal - diskon + ppn;
 const tglInv = saleData.tanggal ? new Date(saleData.tanggal).toLocaleDateString('id-ID') : '';
 const tglJatuhTempo = saleData.jatuh_tempo ? new Date(saleData.jatuh_tempo).toLocaleDateString('id-ID') : '';
 const rowsHtml = items.map((d, i) => `
-<tr><td style="text-align:center;">${i + 1}</td><td>${d.nama_barang}${d.kemasan ? ' (' + d.kemasan + ')' : ''}</td><td style="text-align:center;">${d.jumlah}</td><td style="text-align:right;">${(d.harga_satuan || 0).toLocaleString('id-ID')}</td><td style="text-align:right;">${(d.total || 0).toLocaleString('id-ID')}</td></tr>`).join('');
+<tr><td style="text-align:center;">${i + 1}</td><td>${d.nama_barang}${d.kemasan ? ' (' + d.kemasan + ')' : ''}</td><td style="text-align:center;">${d.jumlah}</td><td style="text-align:right;">${formatNumber(d.harga_satuan || 0)}</td><td style="text-align:right;">${formatNumber(d.total || 0)}</td></tr>`).join('');
 const emptyRowsNeeded = Math.max(0, 15 - items.length);
 const emptyRowsHtml = Array(emptyRowsNeeded).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('');
 const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${saleData.no_invoice}</title><style>
@@ -1167,7 +1189,7 @@ th { background: #eef2fb; text-align: left; }
 .signature { text-align: right; margin-top: 60px; font-size: 13px; }
 .print-btn { margin: 16px auto; display: block; padding: 10px 24px; background: #2451a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
 @media print { .print-btn { display: none; } }
-</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><div class="invoice-box"><div class="header-row"><div><p class="company-name">CV KEMARI SUKSES MAKMUR</p><p class="company-address">Ruko CItralake Sawangan Blok E01 - 18 Bojongsari Depok</p></div><div class="nomor-inv">Nomor Inv : ${saleData.no_invoice || ''}</div></div><div class="invoice-title">INVOICE</div><hr><div class="info-row"><div class="info-box"><div><strong>Nama</strong> &nbsp; ${saleData.customer || ''}</div><div><strong>Alamat</strong> &nbsp; ${customer.alamat || ''}</div><div><strong>Tlp</strong> &nbsp;&nbsp;&nbsp; ${customer.telepon || ''}</div></div><div class="info-box"><div><strong>Tanggal Inv</strong> &nbsp; ${tglInv}</div><div><strong>Tgl Jt Tempo</strong> &nbsp; ${tglJatuhTempo}</div><div><strong>No PO</strong></div><div><strong>No SJ</strong></div></div></div><table><thead><tr><th style="width:30px;">NO</th><th>Nama Barang</th><th style="width:60px;">QtY</th><th style="width:110px;">Harga / Unit</th><th style="width:120px;">TOTAL</th></tr></thead><tbody>${rowsHtml}${emptyRowsHtml}</tbody></table><table class="totals-table"><tr><td>Sub Total</td><td>${subTotal.toLocaleString('id-ID', {minimumFractionDigits:2})}</td></tr><tr><td>Diskon</td><td>${diskon.toLocaleString('id-ID', {minimumFractionDigits:2})}</td></tr><tr><td>PPN</td><td>${ppn ? ppn.toLocaleString('id-ID', {minimumFractionDigits:2}) : ''}</td></tr><tr><td>Total Invoice</td><td>${totalInvoice.toLocaleString('id-ID', {minimumFractionDigits:2})}</td></tr></table><div class="payment-info">
+</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><div class="invoice-box"><div class="header-row"><div><p class="company-name">CV KEMARI SUKSES MAKMUR</p><p class="company-address">Ruko CItralake Sawangan Blok E01 - 18 Bojongsari Depok</p></div><div class="nomor-inv">Nomor Inv : ${saleData.no_invoice || ''}</div></div><div class="invoice-title">INVOICE</div><hr><div class="info-row"><div class="info-box"><div><strong>Nama</strong> &nbsp; ${saleData.customer || ''}</div><div><strong>Alamat</strong> &nbsp; ${customer.alamat || ''}</div><div><strong>Tlp</strong> &nbsp;&nbsp;&nbsp; ${customer.telepon || ''}</div></div><div class="info-box"><div><strong>Tanggal Inv</strong> &nbsp; ${tglInv}</div><div><strong>Tgl Jt Tempo</strong> &nbsp; ${tglJatuhTempo}</div><div><strong>No PO</strong></div><div><strong>No SJ</strong></div></div></div><table><thead><tr><th style="width:30px;">NO</th><th>Nama Barang</th><th style="width:60px;">QtY</th><th style="width:110px;">Harga / Unit</th><th style="width:120px;">TOTAL</th></tr></thead><tbody>${rowsHtml}${emptyRowsHtml}</tbody></table><table class="totals-table"><tr><td>Sub Total</td><td>${formatNumber(subTotal)}</td></tr><tr><td>Diskon</td><td>${formatNumber(diskon)}</td></tr><tr><td>PPN</td><td>${ppn ? formatNumber(ppn) : ''}</td></tr><tr><td>Total Invoice</td><td>${formatNumber(totalInvoice)}</td></tr></table><div class="payment-info">
 Pembayaran hanya dilakukan transfer ke<br><strong>Rekening BCA No: 8800983437</strong><br>
 atas nama: Ganjar Satyanagara
 </div><div class="signature">Authorized Signature</div></div></body></html>`;
