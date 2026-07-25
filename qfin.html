@@ -500,6 +500,10 @@ function showAlert(type, message, elementId) {
 const el = elementId ? document.getElementById(elementId) : document.getElementById('assemblyAlert');
 if (el) { el.className = 'alert alert-' + type; el.textContent = message; el.style.display = 'flex'; }
 }
+function clearAlert(elementId) {
+const el = elementId ? document.getElementById(elementId) : document.getElementById('assemblyAlert');
+if (el) el.style.display = 'none';
+}
 
 function checkPembelianPrice(rowId) {
 const priceInput = document.getElementById(`pem-price-${rowId}`);
@@ -508,6 +512,8 @@ const price = parseFloat(priceInput.value) || 0;
 const avgPrice = parseFloat(priceInput.dataset.avgPrice) || 0;
 if (avgPrice > 0 && price > 0 && price < avgPrice) {
 showAlert('warning', `Harga barang #${rowId + 1} (Rp ${formatNumber(price)}) lebih murah dari rata-rata pembelian (Rp ${formatNumber(Math.round(avgPrice))}). Apakah Anda yakin?`, 'pembelianAlert');
+} else {
+clearAlert('pembelianAlert');
 }
 }
 
@@ -525,7 +531,8 @@ el.value = el.value.replace(/[^0-9]/g, '');
 }
 }
 function getRupiahValue(el) {
-return parseFloat(el.dataset.rawValue || el.value.replace(/[^0-9]/g, '')) || 0;
+if (!el) return 0;
+return parseFloat(el.value.replace(/[^0-9]/g, '')) || 0;
 }
 function formatNumber(num) {
 if (num === undefined || num === null) return '0';
@@ -1123,11 +1130,13 @@ if (totalInput) {
 totalInput.dataset.rawValue = Math.round(total);
 totalInput.value = 'Rp ' + formatNumber(Math.round(total));
 }
-// [fix #4] Reminder kalau harga diketik lebih murah dari pricelist —
-// cuma pengingat, tidak menghalangi submit.
+// [fix] Reminder kalau harga diketik lebih murah dari pricelist —
+// kalau sudah dibetulkan, warning dihapus.
 const pricelistHarga = parseFloat(priceInput?.dataset.pricelistPrice) || 0;
 if (pricelistHarga > 0 && price > 0 && price < pricelistHarga) {
 showAlert('warning', `Harga barang #${id + 1} (Rp ${formatNumber(price)}) lebih murah dari pricelist (Rp ${formatNumber(pricelistHarga)}). Apakah Anda yakin?`, 'penjualanAlert');
+} else {
+clearAlert('penjualanAlert');
 }
 calculatePenjualanSummary();
 }
