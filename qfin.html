@@ -406,6 +406,15 @@ const jumlahKemasanInput = document.getElementById(`pen-jumlah-kemasan-${rowId}`
 if (kemasanInput) { kemasanInput.value = ''; kemasanInput.dataset.value = ''; }
 if (jumlahKemasanInput) jumlahKemasanInput.value = '';
 }
+if (inputId === 'pemCOA') {
+// [fix] COA 70010-00 s/d 70060-00 -> auto Q.Co sebagai supplier — biaya
+// operasional internal begini biasanya bukan ke vendor eksternal.
+const coaNum = parseCOACode(value);
+if (coaNum >= 70010 && coaNum <= 70060) {
+const supplierInput = document.getElementById('pemSupplier');
+if (supplierInput) { supplierInput.value = 'Q.Co'; supplierInput.dataset.value = 'MAS663830737'; }
+}
+}
 if (inputId === 'pemSupplier') updateAllKodeLot();
 const pemBarangMatch = inputId.match(/^pem-barang-(\d+)$/);
 if (pemBarangMatch) {
@@ -1507,14 +1516,19 @@ return `<tr><td>${r.nama_produk}</td><td>${r.berat_kg}</td><td><input type="numb
 function updatePricelistRow(i, field, value) {
 const r = pricelistData[i];
 r[field] = parseFloat(value) || 0;
-const subtotal = (r.hpp_per_kg * r.berat_kg) + r.harga_kemasan;
+// [fix #4] Sama seperti backend generatePricelist(): produk dengan
+// id_produk berakhiran "-NNN" (mis. "-250") HPP-nya sudah per kantong,
+// jangan dikali berat_kg lagi.
+const hasSizeSuffix = /-\d+$/.test(r.id_produk || '');
+const hppComponent = hasSizeSuffix ? r.hpp_per_kg : (r.hpp_per_kg * r.berat_kg);
+const subtotal = hppComponent + r.harga_kemasan;
 r.harga_jual = Math.round(r.nama_kemasan ? subtotal * (1 + r.markup_percent / 100) : subtotal);
 document.getElementById(`pl-hasil-${i}`).textContent = 'Rp ' + formatNumber(r.harga_jual);
 }
 async function savePricelistTable() {
 if (!pricelistData || pricelistData.length === 0) { showAlert('danger', 'Belum ada data untuk disimpan - klik Generate dulu', 'pricelistAlert'); return; }
 const trimmed = pricelistData.map(r => ({
-id_produk: r.id_produk, berat_kg: r.berat_kg, hpp_per_kg: r.hpp_per_kg,
+id_produk: r.id_produk, nama_produk: r.nama_produk, berat_kg: r.berat_kg, hpp_per_kg: r.hpp_per_kg,
 nama_kemasan: r.nama_kemasan, harga_kemasan: r.harga_kemasan,
 markup_percent: r.markup_percent, harga_jual: r.harga_jual
 }));
