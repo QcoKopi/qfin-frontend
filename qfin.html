@@ -1505,4 +1505,572 @@ if (!stockTableData) { body.innerHTML = '<tr><td colspan="8" style="text-align:c
 const query = (document.getElementById('stockSearch').value || '').toLowerCase();
 const kategoriFilter = document.getElementById('stockKategoriFilter').value;
 const rows = stockTableData.filter(r =>
-(r.nama_pro
+(r.nama_produk || '').toLowerCase().includes(query) &&
+(!kategoriFilter || r.kategori === kategoriFilter)
+);
+if (rows.length === 0) { body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);">Tidak ada data</td></tr>'; return; }
+const groups = {};
+rows.forEach(r => {
+const key = r.id_produk;
+if (!groups[key]) groups[key] = { nama_produk: r.nama_produk, diproduksi: 0, terjual: 0, dipakai_assembly_lain: 0, sisa: 0, batches: [] };
+groups[key].diproduksi += r.diproduksi;
+groups[key].terjual += r.terjual;
+groups[key].dipakai_assembly_lain += r.dipakai_assembly_lain || 0;
+groups[key].sisa += r.sisa;
+groups[key].batches.push(r);
+});
+const groupKeys = Object.keys(groups).sort((a, b) => (groups[a].nama_produk || '').localeCompare(groups[b].nama_produk || ''));
+let html = '';
+groupKeys.forEach(key => {
+const g = groups[key];
+const isExpanded = stockExpandedGroups.has(key);
+const safeKey = key.replace(/'/g, "\\'");
+html += `
+<tr style="cursor:pointer;background:#f4f6fb;font-weight:bold;${g.sisa <= 0 ? 'opacity:0.6;' : ''}" onclick="toggleStockGroup('${safeKey}')"><td>${isExpanded ? '▼ ' : '▶ '}</td><td>${g.nama_produk}</td><td style="color:var(--gray);font-weight:normal;">${g.batches.length} batch</td><td></td><td style="text-align:right;">${formatNumber(g.diproduksi)}</td><td style="text-align:right;">${formatNumber(g.terjual)}</td><td style="text-align:right;">${formatNumber(g.dipakai_assembly_lain)}</td><td style="text-align:right;${g.sisa <= 0 ? 'color:#dc3545;' : ''}">${formatNumber(g.sisa)}</td></tr>`;
+if (isExpanded) {
+g.batches.forEach(b => {
+html += `
+<tr style="${b.sisa <= 0 ? 'opacity:0.5;' : ''}"><td></td><td></td><td style="padding-left:16px;color:var(--gray);">${b.batch_no}</td><td>${b.tanggal ? new Date(b.tanggal).toLocaleDateString('id-ID') : ''}</td><td style="text-align:right;">${formatNumber(b.diproduksi)}</td><td style="text-align:right;">${formatNumber(b.terjual)}</td><td style="text-align:right;">${formatNumber(b.dipakai_assembly_lain || 0)}</td><td style="text-align:right;font-weight:bold;${b.sisa <= 0 ? 'color:#dc3545;' : ''}">${formatNumber(b.sisa)}</td></tr>`;
+});
+}
+});
+body.innerHTML = html;
+}
+function toggleStockGroup(key) {
+if (stockExpandedGroups.has(key)) stockExpandedGroups.delete(key); else stockExpandedGroups.add(key);
+renderStockTable();
+}
+// ============================================================
+// PRICELIST
+// ============================================================
+let pricelistData = null;
+async function generatePricelistTable() {
+// Coba load dari cache dulu
+const cached = getCache('pricelist_data');
+if (cached) {
+pricelistData = cached;
+renderPricelistTable();
+showAlert('info', 'Pricelist dimuat dari cache. Klik Generate untuk data terbaru.', 'pricelistAlert');
+return;
+}
+document.getElementById('pricelistTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);">Menghitung...</td></tr>';
+const result = await callGAS('generatePricelist', {
+markup_percent: document.getElementById('plMarkupDefault').value
+});
+if (result.success) {
+pricelistData = result.data;
+setCache('pricelist_data', pricelistData);
+renderPricelistTable();
+} else {
+showAlert('danger', 'Gagal generate: ' + result.message, 'pricelistAlert');
+}
+}
+function renderPricelistTable() {
+const body = document.getElementById('pricelistTableBody');
+if (!pricelistData) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);">Klik Generate untuk memuat pricelist</td></tr>'; return; }
+const query = (document.getElementById('plSearch').value || '').toLowerCase();
+const visibleIdx = pricelistData.map((r, i) => i).filter(i => pricelistData[i].nama_produk.toLowerCase().includes(query));
+if (visibleIdx.length === 0) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);">Tidak ada data</td></tr>'; return; }
+body.innerHTML = visibleIdx.map(i => {
+const r = pricelistData[i];
+return `<tr><td>${r.nama_produk}</td><td>${r.berat_kg}</td><td><input type="number" value="${r.hpp_per_kg}" style="width:100px;" oninput="updatePricelistRow(${i}, 'hpp_per_kg', this.value)"></td><td>${r.nama_kemasan || '-'}</td><td><input type="number" value="${r.harga_kemasan}" style="width:100px;" oninput="updatePricelistRow(${i}, 'harga_kemasan', this.value)"></td><td><input type="number" value="${r.markup_percent}" style="width:70px;" oninput="updatePricelistRow(${i}, 'markup_percent', this.value)"></td><td id="pl-hasil-${i}" style="font-weight:bold;">Rp ${formatNumber(r.harga_jual)}</td></tr>`;
+}).join('');
+}
+function updatePricelistRow(i, field, value) {
+const r = pricelistData[i];
+r[field] = parseFloat(value) || 0;
+// [fix #4] Sama seperti backend generatePricelist(): produk dengan
+// id_produk berakhiran "-NNN" (mis. "-250") HPP-nya sudah per kantong,
+// jangan dikali berat_kg lagi.
+const hasSizeSuffix = /-\d+$/.test(r.id_produk || '');
+const hppComponent = hasSizeSuffix ? r.hpp_per_kg : (r.hpp_per_kg * r.berat_kg);
+const subtotal = hppComponent + r.harga_kemasan;
+r.harga_jual = Math.round(r.nama_kemasan ? subtotal * (1 + r.markup_percent / 100) : subtotal);
+document.getElementById(`pl-hasil-${i}`).textContent = 'Rp ' + formatNumber(r.harga_jual);
+}
+async function savePricelistTable() {
+if (!pricelistData || pricelistData.length === 0) { showAlert('danger', 'Belum ada data untuk disimpan - klik Generate dulu', 'pricelistAlert'); return; }
+const trimmed = pricelistData.map(r => ({
+id_produk: r.id_produk, nama_produk: r.nama_produk, berat_kg: r.berat_kg, hpp_per_kg: r.hpp_per_kg,
+nama_kemasan: r.nama_kemasan, harga_kemasan: r.harga_kemasan,
+markup_percent: r.markup_percent, harga_jual: r.harga_jual
+}));
+const CHUNK_SIZE = 15;
+const chunks = [];
+for (let i = 0; i < trimmed.length; i += CHUNK_SIZE) chunks.push(trimmed.slice(i, i + CHUNK_SIZE));
+let totalSaved = 0;
+for (let i = 0; i < chunks.length; i++) {
+showAlert('info', `Menyimpan bagian ${i + 1}/${chunks.length}...`, 'pricelistAlert');
+const result = await callGAS('savePricelist', { items: JSON.stringify(chunks[i]), isFirstChunk: i === 0 ? 'true' : 'false' });
+if (!result.success) {
+showAlert('danger', `Gagal simpan bagian ${i + 1}/${chunks.length}: ${result.message} (${totalSaved} produk sebelumnya sudah tersimpan)`, 'pricelistAlert');
+return;
+}
+totalSaved += result.saved || 0;
+}
+showAlert('success', totalSaved + ' harga tersimpan. Harga jual di Penjualan akan otomatis pakai ini.', 'pricelistAlert');
+setCache('pricelist_data', pricelistData);
+}
+function printPricelist() {
+if (!pricelistData || pricelistData.length === 0) { showAlert('danger', 'Belum ada data untuk dicetak - klik Generate dulu', 'pricelistAlert'); return; }
+const printableData = pricelistData.filter(r => r.hpp_per_kg > 0);
+if (printableData.length === 0) { showAlert('danger', 'Semua produk masih HPP Rp0 - tidak ada yang bisa dicetak', 'pricelistAlert'); return; }
+const rowsHtml = printableData.map(r => `
+<tr><td>${r.nama_produk}</td><td style="text-align:center;">${r.berat_kg} kg</td><td style="text-align:right;">${formatNumber(r.harga_jual)}</td></tr>`).join('');
+const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pricelist</title><style>
+body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #222; }
+.box { max-width: 700px; margin: 0 auto; }
+h1 { color: #2451a6; text-align: center; }
+.tanggal { text-align: center; color: #666; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { border: 1px solid #999; padding: 8px 10px; }
+th { background: #eef2fb; text-align: left; }
+.print-btn { margin: 16px auto; display: block; padding: 10px 24px; background: #2451a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+@media print { .print-btn { display: none; } }
+</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><div class="box"><h1>PRICELIST</h1><div class="tanggal">Berlaku sejak ${new Date().toLocaleDateString('id-ID')}</div><table><thead><tr><th>Produk</th><th style="text-align:center;">Berat</th><th style="text-align:right;">Harga (Rp)</th></tr></thead><tbody>${rowsHtml}</tbody></table></div></body></html>`;
+const win = window.open('', '_blank');
+if (win) { win.document.write(html); win.document.close(); }
+}
+// ============================================================
+// NERACA & RUGI LABA
+// ============================================================
+let neracaReportData = null;
+let rugiLabaReportData = null;
+async function loadNeracaReport(forceRefresh) {
+if (!forceRefresh) {
+const cached = getCache('neracaReport');
+if (cached) {
+neracaReportData = cached.data;
+renderFinancialTable('neracaTable', cached.data);
+showAlert('info', `Data dari cache (terakhir dihitung: ${new Date(cached.timestamp).toLocaleString('id-ID')}). Klik Refresh untuk data terbaru.`, 'neracaAlert');
+return;
+}
+}
+document.getElementById('neracaTableBody').innerHTML = '<tr><td>Menghitung...</td></tr>';
+const result = await callGAS('generateNeracaReport', {}, 90000);
+if (!result.success) { showAlert('danger', 'Gagal: ' + result.message, 'neracaAlert'); return; }
+neracaReportData = result;
+setCache('neracaReport', result);
+renderFinancialTable('neracaTable', result);
+if (result.balance) {
+showAlert('success', 'Neraca balance di semua kolom (selisih Rp 0).', 'neracaAlert');
+} else {
+const selisihText = Object.entries(result.selisih_per_kolom).map(([k, v]) => `${k}: Rp${formatNumber(v)}`).join(', ');
+showAlert('danger', 'Neraca TIDAK balance - selisih per kolom: ' + selisihText, 'neracaAlert');
+}
+}
+async function loadRugiLabaReport(forceRefresh) {
+if (!forceRefresh) {
+const cached = getCache('rugiLabaReport');
+if (cached) {
+rugiLabaReportData = cached.data;
+renderFinancialTable('rugiLabaTable', cached.data);
+showAlert('info', `Data dari cache (terakhir dihitung: ${new Date(cached.timestamp).toLocaleString('id-ID')}). Klik Refresh untuk data terbaru.`, 'rugiLabaAlert');
+return;
+}
+}
+document.getElementById('rugiLabaTableBody').innerHTML = '<tr><td>Menghitung...</td></tr>';
+const result = await callGAS('generateRugiLabaReportDetailed', {}, 90000);
+if (!result.success) { showAlert('danger', 'Gagal: ' + result.message, 'rugiLabaAlert'); return; }
+rugiLabaReportData = result;
+setCache('rugiLabaReport', result);
+renderFinancialTable('rugiLabaTable', result);
+document.getElementById('rugiLabaAlert').style.display = 'none';
+}
+function renderFinancialTable(tableId, report) {
+const head = document.getElementById(tableId).querySelector('thead');
+const body = document.getElementById(tableId + 'Body');
+const cols = report.columns;
+head.innerHTML = '<tr><th></th>' + cols.map(c => `<th style="text-align:right;">${c}</th>`).join('') + '</tr>';
+body.innerHTML = report.rows.map(r => {
+if (r.separator) return `<tr><td colspan="${cols.length + 1}" style="border:none;height:10px;padding:0;"></td></tr>`;
+const style = r.isTotal ? 'font-weight:bold;background:#f4f6fb;' : '';
+return `<tr style="${style}"><td>${r.label}</td>` + cols.map(c => `<td style="text-align:right;">${formatNumber(r.values[c])}</td>`).join('') + `</tr>`;
+}).join('');
+}
+function printFinancialReport(type) {
+const report = type === 'neraca' ? neracaReportData : rugiLabaReportData;
+const title = type === 'neraca' ? 'NERACA' : 'LAPORAN RUGI LABA';
+if (!report) { showAlert('danger', 'Belum ada data - klik Refresh dulu', type === 'neraca' ? 'neracaAlert' : 'rugiLabaAlert'); return; }
+const cols = report.columns;
+const rowsHtml = report.rows.map(r => {
+if (r.separator) return `<tr><td colspan="${cols.length + 1}" style="border:none;height:8px;"></td></tr>`;
+const style = r.isTotal ? 'font-weight:bold;background:#eef2fb;' : '';
+return `<tr style="${style}"><td>${r.label}</td>` + cols.map(c => `<td style="text-align:right;">${formatNumber(r.values[c])}</td>`).join('') + `</tr>`;
+}).join('');
+const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>
+body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #222; font-size: 12px; }
+h1 { color: #2451a6; text-align: center; }
+.tanggal { text-align: center; color: #666; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #999; padding: 5px 8px; }
+th { background: #eef2fb; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+.print-btn { margin: 16px auto; display: block; padding: 10px 24px; background: #2451a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+@media print { .print-btn { display: none; } body { font-size: 10px; } }
+</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><h1>${title}</h1><div class="tanggal">Per ${new Date().toLocaleDateString('id-ID')}</div><table><thead><tr><th style="text-align:left;"></th>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`;
+const win = window.open('', '_blank');
+if (win) { win.document.write(html); win.document.close(); }
+}
+// ============================================================
+// BUKU BESAR
+// ============================================================
+let bukuBesarData = null;
+async function loadBukuBesar() {
+document.getElementById('bukuBesarTableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);">Memuat...</td></tr>';
+const result = await callGAS('getBukuBesar', {}, 90000);
+if (!result.success) { showAlert('danger', 'Gagal: ' + result.message, 'bukuBesarAlert'); return; }
+bukuBesarData = result.data;
+const akunSet = new Set();
+bukuBesarData.forEach(e => { akunSet.add(e.akun_debit); akunSet.add(e.akun_kredit); });
+const select = document.getElementById('bbAkunFilter');
+const currentValue = select.value;
+select.innerHTML = '<option value="">Semua Akun</option>' + Array.from(akunSet).sort().map(a => `<option value="${a.replace(/"/g, '&quot;')}">${a}</option>`).join('');
+select.value = currentValue;
+renderBukuBesar();
+}
+function renderBukuBesar() {
+if (!bukuBesarData) return;
+const akunFilter = document.getElementById('bbAkunFilter').value;
+const query = (document.getElementById('bbSearch').value || '').toLowerCase();
+const filtered = bukuBesarData.filter(e => {
+if (akunFilter && e.akun_debit !== akunFilter && e.akun_kredit !== akunFilter) return false;
+if (query) {
+const haystack = (e.keterangan + ' ' + e.pihak + ' ' + e.sumber + ' ' + e.referensi).toLowerCase();
+if (!haystack.includes(query)) return false;
+}
+return true;
+});
+document.getElementById('bbCount').textContent = `Menampilkan ${filtered.length} dari ${bukuBesarData.length} entri` + (akunFilter ? ` - total: Rp ${formatNumber(filtered.reduce((s, e) => s + e.jumlah, 0))}` : '');
+const body = document.getElementById('bukuBesarTableBody');
+if (filtered.length === 0) { body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);">Tidak ada data</td></tr>'; return; }
+body.innerHTML = filtered.map(e => `<tr><td>${e.tanggal}</td><td>${e.akun_debit}</td><td>${e.akun_kredit}</td><td style="text-align:right;">${formatNumber(e.jumlah)}</td><td>${e.keterangan}</td><td>${e.pihak || ''}</td><td>${e.sumber}</td><td>${e.referensi}</td></tr>`).join('');
+}
+// ============================================================
+// PIUTANG & HUTANG DETAIL
+// ============================================================
+let piutangHutangData = null;
+let phExpanded = new Set();
+async function loadPiutangHutangDetail() {
+document.getElementById('piutangTableBody').innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--gray);">Memuat...</td></tr>';
+document.getElementById('hutangTableBody').innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--gray);">Memuat...</td></tr>';
+const result = await callGAS('generatePiutangHutangDetail', {}, 60000);
+if (!result.success) { showAlert('danger', 'Gagal: ' + result.message, 'piutangHutangAlert'); return; }
+piutangHutangData = result;
+phExpanded.clear();
+renderPiutangHutangDetail();
+}
+function togglePhRow(kind, idx) {
+const key = kind + '-' + idx;
+if (phExpanded.has(key)) phExpanded.delete(key); else phExpanded.add(key);
+renderPiutangHutangDetail();
+}
+function renderPiutangHutangDetail() {
+if (!piutangHutangData) return;
+document.getElementById('piutangTotal').textContent = 'Total Piutang: Rp ' + formatNumber(piutangHutangData.total_piutang);
+document.getElementById('hutangTotal').textContent = 'Total Hutang: Rp ' + formatNumber(piutangHutangData.total_hutang);
+const renderList = (list, kind, bodyId) => {
+const body = document.getElementById(bodyId);
+if (list.length === 0) { body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--gray);">Tidak ada saldo</td></tr>'; return; }
+body.innerHTML = list.map((party, idx) => {
+const key = kind + '-' + idx;
+const isOpen = phExpanded.has(key);
+let html = `<tr style="cursor:pointer;" onclick="togglePhRow('${kind}', ${idx})"><td>${isOpen ? '▼ ' : '▶ '}</td><td>${party.nama}</td><td style="text-align:right;font-weight:bold;">${formatNumber(party.saldo)}</td></tr>`;
+if (isOpen) {
+html += party.detail.map(d => `<tr style="background:#f9fafb;"><td></td><td colspan="1" style="color:var(--gray);font-size:13px;">${d.keterangan}</td><td style="text-align:right;color:var(--gray);font-size:13px;">${formatNumber(d.jumlah)}</td></tr>`).join('');
+}
+return html;
+}).join('');
+};
+renderList(piutangHutangData.piutang, 'p', 'piutangTableBody');
+renderList(piutangHutangData.hutang, 'h', 'hutangTableBody');
+}
+function downloadCsv(filename, headers, rows) {
+const escape = v => {
+const s = (v === null || v === undefined) ? '' : String(v);
+return '"' + s.replace(/"/g, '""') + '"';
+};
+const lines = [headers.map(escape).join(',')].concat(rows.map(row => row.map(escape).join(',')));
+const csv = '\uFEFF' + lines.join('\r\n');
+const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url; a.download = filename;
+document.body.appendChild(a); a.click(); document.body.removeChild(a);
+URL.revokeObjectURL(url);
+}
+function downloadBukuBesarCsv() {
+if (!bukuBesarData || bukuBesarData.length === 0) { showAlert('danger', 'Belum ada data - klik Refresh dulu', 'bukuBesarAlert'); return; }
+const akunFilter = document.getElementById('bbAkunFilter').value;
+const query = (document.getElementById('bbSearch').value || '').toLowerCase();
+const filtered = bukuBesarData.filter(e => {
+if (akunFilter && e.akun_debit !== akunFilter && e.akun_kredit !== akunFilter) return false;
+if (query) {
+const haystack = (e.keterangan + ' ' + e.pihak + ' ' + e.sumber + ' ' + e.referensi).toLowerCase();
+if (!haystack.includes(query)) return false;
+}
+return true;
+});
+const rows = filtered.map(e => [e.tanggal, e.akun_debit, e.akun_kredit, e.jumlah, e.keterangan, e.pihak, e.sumber, e.referensi]);
+downloadCsv('buku-besar.csv', ['Tanggal', 'Akun Debit', 'Akun Kredit', 'Jumlah', 'Keterangan', 'Pihak', 'Sumber', 'Referensi'], rows);
+}
+function downloadPiutangHutangCsv(kind) {
+if (!piutangHutangData) { showAlert('danger', 'Belum ada data - klik Refresh dulu', 'piutangHutangAlert'); return; }
+const list = kind === 'piutang' ? piutangHutangData.piutang : piutangHutangData.hutang;
+const rows = [];
+list.forEach(party => {
+party.detail.forEach(d => {
+rows.push([party.nama, party.saldo, d.keterangan, d.jumlah]);
+});
+});
+const label = kind === 'piutang' ? 'Customer' : 'Supplier';
+downloadCsv(kind + '-detail.csv', [label, 'Saldo Total', 'Keterangan Transaksi', 'Jumlah Transaksi'], rows);
+}
+let piutangReconSummary = null, hutangReconSummary = null;
+let piutangReconDetailCache = {}, hutangReconDetailCache = {};
+let piutangReconExpanded = new Set(), hutangReconExpanded = new Set();
+async function loadPiutangReconciliationSummary(forceRefresh) {
+document.getElementById('piutangReconTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);">Memuat...</td></tr>';
+const result = await callGAS('generatePiutangReconciliationSummary', forceRefresh ? { refresh: 'true' } : {}, 60000);
+if (!result.success) { showAlert('danger', 'Gagal: ' + result.message, 'piutangReconAlert'); return; }
+piutangReconSummary = result.data;
+piutangReconDetailCache = {}; piutangReconExpanded = new Set();
+renderPiutangReconciliationSummary();
+}
+function renderPiutangReconciliationSummary() {
+if (!piutangReconSummary) return;
+const query = (document.getElementById('prSearch').value || '').toLowerCase();
+const filtered = piutangReconSummary.filter(c => c.customer.toLowerCase().includes(query));
+const body = document.getElementById('piutangReconTableBody');
+if (filtered.length === 0) { body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);">Tidak ada data</td></tr>'; return; }
+body.innerHTML = filtered.map(c => {
+const isOpen = piutangReconExpanded.has(c.customer);
+let html = `<tr style="cursor:pointer;" onclick="togglePiutangReconRow('${c.customer.replace(/'/g, "\\'")}')"><td>${isOpen ? '▼ ' : '▶ '}</td><td>${c.customer}</td><td style="text-align:right;">${c.jumlah_invoice}</td><td style="text-align:right;">${c.jumlah_belum_lunas + c.jumlah_cek}</td><td style="text-align:right;font-weight:bold;">${formatNumber(c.total_belum_lunas)}</td></tr>`;
+if (isOpen) {
+const detail = piutangReconDetailCache[c.customer];
+if (!detail) {
+html += `<tr><td></td><td colspan="4" style="color:var(--gray);">Memuat rincian...</td></tr>`;
+} else {
+html += detail.map(r => {
+  const statusLabel = r.status === 'DownPayment' && r.sisa > 0
+    ? r.status + ' — Sisa ' + formatNumber(r.sisa)
+    : r.status;
+  return `<tr style="background:#f9fafb;"><td></td><td colspan="2" style="font-size:13px;">${r.no_invoice_piutang} - ${r.tanggal}</td><td style="text-align:right;font-size:13px;">${formatNumber(r.jumlah)}</td><td style="font-size:13px;font-weight:bold;color:${r.status === 'Lunas' ? 'var(--success)' : (r.status === 'CEK JUMLAH' ? 'var(--warning)' : 'var(--danger)')};">${statusLabel}${r.no_invoice_pembayaran ? ' - ' + r.no_invoice_pembayaran : ''}</td></tr>`;
+}).join('');
+}
+}
+return html;
+}).join('');
+}
+async function togglePiutangReconRow(customer) {
+if (piutangReconExpanded.has(customer)) {
+piutangReconExpanded.delete(customer);
+renderPiutangReconciliationSummary();
+return;
+}
+piutangReconExpanded.add(customer);
+renderPiutangReconciliationSummary();
+if (!piutangReconDetailCache[customer]) {
+const result = await callGAS('generatePiutangReconciliation', { customer: customer }, 60000);
+piutangReconDetailCache[customer] = result.success ? result.data : [];
+renderPiutangReconciliationSummary();
+}
+}
+async function loadHutangReconciliationSummary(forceRefresh) {
+document.getElementById('hutangReconTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);">Memuat...</td></tr>';
+const result = await callGAS('generateHutangReconciliationSummary', forceRefresh ? { refresh: 'true' } : {}, 60000);
+if (!result.success) { showAlert('danger', 'Gagal: ' + result.message, 'hutangReconAlert'); return; }
+hutangReconSummary = result.data;
+hutangReconDetailCache = {}; hutangReconExpanded = new Set();
+renderHutangReconciliationSummary();
+}
+function renderHutangReconciliationSummary() {
+if (!hutangReconSummary) return;
+const query = (document.getElementById('hrSearch').value || '').toLowerCase();
+const filtered = hutangReconSummary.filter(s => s.supplier.toLowerCase().includes(query));
+const body = document.getElementById('hutangReconTableBody');
+if (filtered.length === 0) { body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);">Tidak ada data</td></tr>'; return; }
+body.innerHTML = filtered.map(s => {
+const isOpen = hutangReconExpanded.has(s.supplier);
+let html = `<tr style="cursor:pointer;" onclick="toggleHutangReconRow('${s.supplier.replace(/'/g, "\\'")}')"><td>${isOpen ? '▼ ' : '▶ '}</td><td>${s.supplier}</td><td style="text-align:right;">${s.jumlah_dokumen}</td><td style="text-align:right;">${s.jumlah_belum_lunas}</td><td style="text-align:right;font-weight:bold;">${formatNumber(s.total_belum_lunas)}</td></tr>`;
+if (isOpen) {
+const detail = hutangReconDetailCache[s.supplier];
+if (!detail) {
+html += `<tr><td></td><td colspan="4" style="color:var(--gray);">Memuat rincian...</td></tr>`;
+} else {
+html += detail.map(r => `<tr style="background:#f9fafb;"><td></td><td colspan="2" style="font-size:13px;">${r.no_dokumen_hutang} - ${r.tanggal}</td><td style="text-align:right;font-size:13px;">${formatNumber(r.jumlah)}</td><td style="font-size:13px;font-weight:bold;color:${r.status === 'Lunas' ? 'var(--success)' : 'var(--danger)'};">${r.status}${r.no_dokumen_pembayaran ? ' - ' + r.no_dokumen_pembayaran : ''}</td></tr>`).join('');
+}
+}
+return html;
+}).join('');
+}
+async function toggleHutangReconRow(supplier) {
+if (hutangReconExpanded.has(supplier)) {
+hutangReconExpanded.delete(supplier);
+renderHutangReconciliationSummary();
+return;
+}
+hutangReconExpanded.add(supplier);
+renderHutangReconciliationSummary();
+if (!hutangReconDetailCache[supplier]) {
+const result = await callGAS('generateHutangReconciliation', { supplier: supplier }, 60000);
+hutangReconDetailCache[supplier] = result.success ? result.data : [];
+renderHutangReconciliationSummary();
+}
+}
+async function downloadReconciliationCsv(kind) {
+showAlert('info', 'Menyiapkan data lengkap untuk di-download, mohon tunggu (bisa sampai beberapa menit)...', kind === 'piutang' ? 'piutangReconAlert' : 'hutangReconAlert');
+if (kind === 'piutang') {
+const result = await callGAS('generatePiutangReconciliation', {}, 300000);
+if (!result.success) { showAlert('danger', 'Gagal: ' + result.message, 'piutangReconAlert'); return; }
+const rows = result.data.map(r => [r.no_invoice_piutang, r.customer, r.tanggal, r.jumlah, r.no_invoice_pembayaran, r.status]);
+downloadCsv('piutang-per-invoice.csv', ['No Invoice Piutang', 'Customer', 'Tanggal', 'Jumlah', 'No Invoice Pembayaran', 'Status'], rows);
+} else {
+const result = await callGAS('generateHutangReconciliation', {}, 300000);
+if (!result.success) { showAlert('danger', 'Gagal: ' + result.message, 'hutangReconAlert'); return; }
+const rows = result.data.map(r => [r.no_dokumen_hutang, r.supplier, r.tanggal, r.jumlah, r.no_dokumen_pembayaran, r.status]);
+downloadCsv('hutang-per-dokumen.csv', ['No Dokumen Hutang', 'Supplier', 'Tanggal', 'Jumlah', 'No Dokumen Pembayaran', 'Status'], rows);
+}
+}
+// ============================================================
+// STOCK OPNAME
+// ============================================================
+async function fetchStockQty() {
+const produkInput = document.getElementById('opProduk');
+const sku = produkInput?.dataset.value || produkInput?.value; if (!sku) return;
+const result = await callGAS('getStock', { id_produk: sku });
+if (result.success && result.data) { document.getElementById('opQtySistem').value = result.data.saldo || 0; calculateSelisih(); }
+}
+function calculateSelisih() {
+const sistem = parseFloat(document.getElementById('opQtySistem').value) || 0;
+const fisik = parseFloat(document.getElementById('opQtyFisik').value) || 0;
+document.getElementById('opSelisih').value = fisik - sistem;
+}
+async function submitOpname() {
+clearMandatoryErrors('tab-opname');
+if (!validateMandatory('tab-opname', 'opnameAlert')) return;
+const data = {
+tanggal: document.getElementById('opDate').value,
+id_produk: document.getElementById('opProduk').dataset.value || document.getElementById('opProduk').value,
+nama_produk: document.getElementById('opProduk').value,
+qty_fisik: parseFloat(document.getElementById('opQtyFisik').value) || 0,
+keterangan: document.getElementById('opKeterangan').value
+};
+const result = await callGAS('submitOpname', data);
+if (result.success) { showAlert('success', 'Opname berhasil! Selisih: ' + result.selisih, 'opnameAlert'); clearOpnameForm(); }
+else showAlert('danger', 'Gagal: ' + result.message, 'opnameAlert');
+}
+function clearOpnameForm() {
+document.getElementById('opProduk').value = ''; document.getElementById('opProduk').dataset.value = '';
+document.getElementById('opQtySistem').value = ''; document.getElementById('opQtyFisik').value = '';
+document.getElementById('opSelisih').value = ''; document.getElementById('opKeterangan').value = '';
+}
+// ============================================================
+// STOCK MOVEMENT
+// ============================================================
+async function submitMovement() {
+clearMandatoryErrors('tab-movement');
+if (!validateMandatory('tab-movement', 'movementAlert')) return;
+const data = {
+tanggal: document.getElementById('movDate').value,
+id_produk: document.getElementById('movProduk').dataset.value || document.getElementById('movProduk').value,
+nama_produk: document.getElementById('movProduk').value,
+tipe: document.getElementById('movTipe').value,
+qty_in: parseFloat(document.getElementById('movQtyIn').value) || 0,
+qty_out: parseFloat(document.getElementById('movQtyOut').value) || 0,
+referensi: document.getElementById('movRef').value,
+keterangan: document.getElementById('movKeterangan').value
+};
+const result = await callGAS('submitMovement', data);
+if (result.success) { showAlert('success', 'Movement berhasil! Saldo: ' + result.saldo, 'movementAlert'); clearMovementForm(); }
+else showAlert('danger', 'Gagal: ' + result.message, 'movementAlert');
+}
+function clearMovementForm() {
+document.getElementById('movProduk').value = ''; document.getElementById('movProduk').dataset.value = '';
+document.getElementById('movQtyIn').value = '0'; document.getElementById('movQtyOut').value = '0';
+document.getElementById('movRef').value = ''; document.getElementById('movKeterangan').value = '';
+}
+// ============================================================
+// PREVIEW & SYNC
+// ============================================================
+async function updatePreviewStats() {
+const result = await callGAS('getBulk', { tables: ['Penjualan_App', 'Pembelian_App', 'Kas_Masuk', 'Kas_Keluar'] }, 90000);
+const bulk = (result.success && result.data) ? result.data : {};
+const penjualan = bulk['Penjualan_App'] || { success: false };
+const pembelian = bulk['Pembelian_App'] || { success: false };
+const kasMasuk = bulk['Kas_Masuk'] || { success: false };
+const kasKeluar = bulk['Kas_Keluar'] || { success: false };
+document.getElementById('statTotalProduk').textContent = masterData.products.length || 0;
+document.getElementById('statTotalPenjualan').textContent = 'Rp ' + formatNumber((penjualan.success ? penjualan.data.filter(r => (r.kode_transaksi || '').toLowerCase() !== 'sample').reduce((s, r) => s + (parseFloat(r.total_tagihan) || 0), 0) : 0).toFixed(0));
+document.getElementById('statTotalPembelian').textContent = 'Rp ' + formatNumber((pembelian.success ? pembelian.data.reduce((s, r) => s + (parseFloat(r.total) || 0), 0) : 0).toFixed(0));
+document.getElementById('statKasMasuk').textContent = 'Rp ' + formatNumber((kasMasuk.success ? kasMasuk.data.reduce((s, r) => s + (parseFloat(r.kas_masuk) || 0), 0) : 0).toFixed(0));
+document.getElementById('statKasKeluar').textContent = 'Rp ' + formatNumber((kasKeluar.success ? kasKeluar.data.reduce((s, r) => s + (parseFloat(r.kas_keluar) || 0), 0) : 0).toFixed(0));
+const tables = [
+{ name: 'Master_Produk', label: 'Master Produk' },
+{ name: 'Master_Resep', label: 'Master Resep' },
+{ name: 'Master_Customer', label: 'Master Customer' },
+{ name: 'Master_Supplier', label: 'Master Supplier' },
+{ name: 'Master_Salesman', label: 'Master Salesman' },
+{ name: 'Master_COA', label: 'Master COA' },
+{ name: 'Master_CashAccount', label: 'Master Cash Account' },
+{ name: 'Assembly_Entry', label: 'Assembly Entry' },
+{ name: 'Pembelian_App', label: 'Pembelian' },
+{ name: 'Penjualan_App', label: 'Penjualan' },
+{ name: 'Kas_Masuk', label: 'Kas Masuk' },
+{ name: 'Kas_Keluar', label: 'Kas Keluar' }
+];
+let tbody = '';
+for (const t of tables) {
+const result = getCache(t.name);
+const count = result ? result.length : 0;
+const lastSync = localStorage.getItem(CACHE_KEY + t.name + '_time') || 'Never';
+tbody += `<tr><td>${t.label}</td><td>${count}</td><td>${lastSync}</td><td><button class="btn btn-sm btn-primary" onclick="refreshTable('${t.name}')">Refresh</button></td></tr>`;
+}
+document.getElementById('masterTableBody').innerHTML = tbody;
+}
+async function refreshTable(table) {
+const result = await callGAS('getAll', { table });
+if (result.success) { setCache(table, result.data); localStorage.setItem(CACHE_KEY + table + '_time', new Date().toLocaleString()); updateMasterData(table, result.data); updatePreviewStats(); }
+}
+async function loadAllData() {
+await loadMasterData();
+showAlert('success', 'All data refreshed', 'assemblyAlert');
+}
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async function() {
+const savedUrl = localStorage.getItem('qfin_gas_url');
+if (savedUrl) document.getElementById('gasUrl').value = savedUrl;
+setDefaultDates();
+await loadMasterData();
+if (sessionStorage.getItem('qfin_admin_token')) {
+document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+document.getElementById('navtab-adminlogin').textContent = '🔓 Admin';
+}
+// FIX #6: Initialize master data form visibility on load
+onMasterDataJenisChange();
+});
+async function showAdminLoginPrompt() {
+if (sessionStorage.getItem('qfin_admin_token')) {
+if (confirm('Sudah login sebagai admin. Logout?')) {
+sessionStorage.removeItem('qfin_admin_token');
+document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+document.getElementById('navtab-adminlogin').textContent = '🔒 Admin';
+switchTab('assembly', document.querySelector('.nav-tab'));
+}
+return;
+}
+const password = prompt('Masukkan password admin:');
+if (!password) return;
+const result = await callGAS('verifyAdminPassword', { password: password });
+if (result.success) {
+sessionStorage.setItem('qfin_admin_token', result.token);
+document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+document.getElementById('navtab-adminlogin').textContent = '🔓 Admin';
+alert('Login admin berhasil.');
+} else {
+alert('Gagal login: ' + result.message);
+}
+}
+</script></body></html>
