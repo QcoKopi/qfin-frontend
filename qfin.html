@@ -328,6 +328,8 @@ const list = document.getElementById(inputId + '-list');
 const searchTerm = input.value.toLowerCase();
 let data = masterData[dataType] || [];
 // [P1 FIXED v1] Pembelian Biaya / Pembayaran Hutang → ambil dari Produk_ops (bukan Master_Produk)
+// [fix] Pembelian barang biasa → gabung Master_Produk + Master_Kemasan, supaya
+// kemasan (yang hidup di tabel terpisah) bisa dibeli lewat form yang sama.
 if (inputId.startsWith('pem-barang-')) {
   const kodeTrx = document.getElementById('pemKodeTransaksi').value;
   if (kodeTrx === 'Pembelian Biaya' || kodeTrx === 'Pembayaran Hutang') {
@@ -338,6 +340,8 @@ if (inputId.startsWith('pem-barang-')) {
       list.classList.add('show');
       return;
     }
+  } else {
+    data = [...(masterData.products || []), ...(masterData.kemasan || [])];
   }
 }
 const isPemCOA = (dataType === 'coa' && inputId === 'pemCOA');
