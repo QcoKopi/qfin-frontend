@@ -1812,7 +1812,15 @@ function renderFinancialTable(tableId, report) {
 const head = document.getElementById(tableId).querySelector('thead');
 const body = document.getElementById(tableId + 'Body');
 const cols = report.columns;
-head.innerHTML = '<tr><th></th>' + cols.map(c => `<th style="text-align:right;">${c}</th>`).join('') + '</tr>';
+const labels = report.column_labels || {};
+let headHtml = '';
+// [fix format Neraca/Rugi Laba] Baris status "Balance (0)" per bulan —
+// ditampilkan di ATAS header, meniru posisinya di template Excel.
+if (report.status_row) {
+headHtml += '<tr style="color:var(--gray);font-size:11px;"><td>' + (report.status_row.label || 'Status') + '</td>' + cols.map(c => `<td style="text-align:right;">${report.status_row.values[c] !== undefined ? report.status_row.values[c] : ''}</td>`).join('') + '</tr>';
+}
+headHtml += '<tr><th></th>' + cols.map(c => `<th style="text-align:right;">${labels[c] || c}</th>`).join('') + '</tr>';
+head.innerHTML = headHtml;
 body.innerHTML = report.rows.map(r => {
 if (r.separator) return `<tr><td colspan="${cols.length + 1}" style="border:none;height:10px;padding:0;"></td></tr>`;
 const style = r.isTotal ? 'font-weight:bold;background:#f4f6fb;' : '';
@@ -1824,11 +1832,13 @@ const report = type === 'neraca' ? neracaReportData : rugiLabaReportData;
 const title = type === 'neraca' ? 'NERACA' : 'LAPORAN RUGI LABA';
 if (!report) { showAlert('danger', 'Belum ada data - klik Refresh dulu', type === 'neraca' ? 'neracaAlert' : 'rugiLabaAlert'); return; }
 const cols = report.columns;
+const labels = report.column_labels || {};
 const rowsHtml = report.rows.map(r => {
 if (r.separator) return `<tr><td colspan="${cols.length + 1}" style="border:none;height:8px;"></td></tr>`;
 const style = r.isTotal ? 'font-weight:bold;background:#eef2fb;' : '';
 return `<tr style="${style}"><td>${r.label}</td>` + cols.map(c => `<td style="text-align:right;">${formatNumber(r.values[c])}</td>`).join('') + `</tr>`;
 }).join('');
+const statusHtml = report.status_row ? `<tr style="color:#666;font-size:10px;"><td>${report.status_row.label || 'Status'}</td>${cols.map(c => `<td style="text-align:right;">${report.status_row.values[c] !== undefined ? report.status_row.values[c] : ''}</td>`).join('')}</tr>` : '';
 const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>
 body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #222; font-size: 12px; }
 h1 { color: #2451a6; text-align: center; }
@@ -1839,7 +1849,7 @@ th { background: #eef2fb; text-align: right; }
 th:first-child, td:first-child { text-align: left; }
 .print-btn { margin: 16px auto; display: block; padding: 10px 24px; background: #2451a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
 @media print { .print-btn { display: none; } body { font-size: 10px; } }
-</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><h1>${title}</h1><div class="tanggal">Per ${new Date().toLocaleDateString('id-ID')}</div><table><thead><tr><th style="text-align:left;"></th>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`;
+</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><h1>${title}</h1><div class="tanggal">Per ${new Date().toLocaleDateString('id-ID')}</div><table><thead>${statusHtml}<tr><th style="text-align:left;"></th>${cols.map(c => `<th>${labels[c] || c}</th>`).join('')}</tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`;
 const win = window.open('', '_blank');
 if (win) { win.document.write(html); win.document.close(); }
 }
