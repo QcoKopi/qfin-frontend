@@ -329,6 +329,24 @@ case 'Produk_ops': masterData.produkOps = data; break;
 // DROPDOWNS
 // ============================================================
 let stockCache = null;
+// [F6-42] Peta stok untuk form Opname — dimuat SEKALI saat tab dibuka,
+// bukan tiap kali produk dipilih (sebelumnya setiap pilih produk = 1
+// perhitungan ledger penuh di backend, akar "loading produk lama sekali").
+let opnameStockById = null;
+let opnameIdByName = null;
+async function loadOpnameStockMap() {
+const result = await callGAS('getAllStock', {}, 30000);
+if (result && result.success && result.data) {
+opnameStockById = {};
+opnameIdByName = {};
+result.data.forEach(s => {
+const sid = (s.id_produk || '').toString();
+opnameStockById[sid] = parseFloat(s.saldo) || 0;
+const nm = (s.nama_produk || '').toString().trim().toLowerCase();
+if (nm && !opnameIdByName[nm]) opnameIdByName[nm] = sid;
+});
+}
+}
 let hppCache = {};
 const HPP_CACHE_TTL = 5 * 60 * 1000;
 async function loadStockCacheForPenjualan() {
@@ -549,6 +567,8 @@ if (tabName === 'pembelian') { clearPembelianForm(); loadRecentEntries('Pembelia
 if (tabName === 'penjualan') { clearPenjualanForm(); autoFillNextDoc('penInvoice', 'Penjualan_App', 'no_invoice'); loadStockCacheForPenjualan(); loadRecentEntries('Penjualan_INV', 'penjualanRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_invoice',label:'No Invoice'},{field:'customer',label:'Customer'},{field:'total_tagihan',label:'Total',format:'number'},{field:'status_bayar',label:'Status'}]); }
 if (tabName === 'assembly') { loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}]); }
 if (tabName === 'kas-masuk') { loadRecentEntries('Kas_Masuk', 'kasMasukRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'lawan_transaksi',label:'Lawan'},{field:'kas_masuk',label:'Jumlah',format:'number'},{field:'cash_account',label:'Akun'}]); }
+// [F6-42] Opname: siapkan peta stok sekali saat tab pertama dibuka.
+if (tabName === 'opname' && !opnameStockById) loadOpnameStockMap();
 // [P2] Stock: load hanya jika belum pernah dimuat (bukan null check saja, tapi flag)
 if (tabName === 'stock' && !window.__stockLoaded) { window.__stockLoaded = true; loadStockTable(); }
 if (tabName === 'master-data') { loadMasterDataList(); onMasterDataJenisChange(); }
@@ -2457,11 +2477,15 @@ downloadCsv('hutang-per-dokumen.csv', ['No Dokumen Hutang', 'Supplier', 'Tanggal
 // ============================================================
 // STOCK OPNAME
 // ============================================================
+// [F6-42] Lookup stok LOKAL dari peta yang dimuat sekali — tidak ada lagi
+// callGAS('getStock') per klik produk.
 async function fetchStockQty() {
 const produkInput = document.getElementById('opProduk');
 const sku = produkInput?.dataset.value || produkInput?.value; if (!sku) return;
-const result = await callGAS('getStock', { id_produk: sku });
-if (result.success && result.data) { document.getElementById('opQtySistem').value = result.data.saldo || 0; calculateSelisih(); }
+if (!opnameStockById) await loadOpnameStockMap();
+const key = (opnameStockById && opnameStockById[sku] !== undefined) ? sku : (opnameIdByName ? opnameIdByName[(sku || '').toString().trim().toLowerCase()] : undefined);
+const saldo = (opnameStockById && key !== undefined) ? (opnameStockById[key] || 0) : 0;
+document.getElementById('opQtySistem').value = saldo; calculateSelisih();
 }
 function calculateSelisih() {
 const sistem = parseFloat(document.getElementById('opQtySistem').value) || 0;
@@ -2482,7 +2506,15 @@ keterangan: document.getElementById('opKeterangan').value
 };
 const result = await callGAS('submitOpname', data);
 // [F6-37 P1] Backend kini mengembalikan message (info koreksi stok / alasan dilewati)
-if (result.success) { showAlert('success', result.message || ('Opname berhasil! Selisih: ' + result.selisih), 'opnameAlert'); clearOpnameForm(); }
+if (result.success) {
+// [F6-42] Stok produk ini sekarang = qty fisik — perbarui peta lokal
+// supaya opname berikutnya tidak perlu memuat ulang dari backend.
+if (opnameStockById) {
+const kUpd = (opnameStockById[data.id_produk] !== undefined) ? data.id_produk : (opnameIdByName ? opnameIdByName[(data.nama_produk || '').toString().trim().toLowerCase()] : undefined);
+if (kUpd !== undefined) opnameStockById[kUpd] = data.qty_fisik;
+}
+showAlert('success', result.message || ('Opname berhasil! Selisih: ' + result.selisih), 'opnameAlert'); clearOpnameForm();
+}
 else showAlert('danger', 'Gagal: ' + result.message, 'opnameAlert');
 }
 function clearOpnameForm() {
