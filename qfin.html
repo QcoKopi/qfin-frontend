@@ -1229,7 +1229,7 @@ const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${
 body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #222; }
 .invoice-box { max-width: 900px; margin: 0 auto; border: 3px solid #2451a6; padding: 24px; }
 .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
-.company-name { color: #2451a6; font-size: 24px; font-weight: bold; margin: 0; }
+.company-name { color: #6F4E37; font-size: 24px; font-weight: bold; margin: 0; }
 .company-address { font-size: 13px; margin: 4px 0 0; }
 .nomor-inv { font-weight: bold; font-size: 13px; }
 .invoice-title { text-align: center; color: #b5651d; font-size: 32px; font-weight: bold; font-style: italic; margin: 10px 0; }
@@ -1248,7 +1248,7 @@ th { background: #eef2fb; text-align: left; }
 .signature { text-align: right; margin-top: 60px; font-size: 13px; }
 .print-btn { margin: 16px auto; display: block; padding: 10px 24px; background: #2451a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
 @media print { .print-btn { display: none; } }
-</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><div class="invoice-box"><div class="header-row"><div><p class="company-name">CV KEMARI SUKSES MAKMUR</p><p class="company-address">Ruko CItralake Sawangan Blok E01 - 18 Bojongsari Depok</p></div><div class="nomor-inv">Nomor Inv : ${saleData.no_invoice || ''}</div></div><div class="invoice-title">INVOICE</div><hr><div class="info-row"><div class="info-box"><div><strong>Nama</strong> &nbsp; ${saleData.customer || ''}</div><div><strong>Alamat</strong> &nbsp; ${customer.alamat || ''}</div><div><strong>Tlp</strong> &nbsp;&nbsp;&nbsp; ${customer.telepon || ''}</div></div><div class="info-box"><div><strong>Tanggal Inv</strong> &nbsp; ${tglInv}</div><div><strong>Tgl Jt Tempo</strong> &nbsp; ${tglJatuhTempo}</div><div><strong>No PO</strong></div><div><strong>No SJ</strong></div></div></div><table><thead><tr><th style="width:30px;">NO</th><th>Nama Barang</th><th style="width:60px;">QtY</th><th style="width:110px;">Harga / Unit</th><th style="width:120px;">TOTAL</th></tr></thead><tbody>${rowsHtml}${emptyRowsHtml}</tbody></table><table class="totals-table"><tr><td>Sub Total</td><td>${formatNumber(subTotal)}</td></tr><tr><td>Diskon</td><td>${formatNumber(diskon)}</td></tr><tr><td>PPN</td><td>${ppn ? formatNumber(ppn) : ''}</td></tr><tr><td>Total Invoice</td><td>${formatNumber(totalInvoice)}</td></tr></table><div class="payment-info">
+</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><div class="invoice-box"><div class="header-row"><div><p class="company-name">Q.co Coffee Lab &amp; Roastery</p><p class="company-address">Ruko CItralake Sawangan Blok E01 - 18 Bojongsari Depok</p></div><div class="nomor-inv">Nomor Inv : ${saleData.no_invoice || ''}</div></div><div class="invoice-title">INVOICE</div><hr><div class="info-row"><div class="info-box"><div><strong>Nama</strong> &nbsp; ${saleData.customer || ''}</div><div><strong>Alamat</strong> &nbsp; ${customer.alamat || ''}</div><div><strong>Tlp</strong> &nbsp;&nbsp;&nbsp; ${customer.telepon || ''}</div></div><div class="info-box"><div><strong>Tanggal Inv</strong> &nbsp; ${tglInv}</div><div><strong>Tgl Jt Tempo</strong> &nbsp; ${tglJatuhTempo}</div><div><strong>No PO</strong></div><div><strong>No SJ</strong></div></div></div><table><thead><tr><th style="width:30px;">NO</th><th>Nama Barang</th><th style="width:60px;">QtY</th><th style="width:110px;">Harga / Unit</th><th style="width:120px;">TOTAL</th></tr></thead><tbody>${rowsHtml}${emptyRowsHtml}</tbody></table><table class="totals-table"><tr><td>Sub Total</td><td>${formatNumber(subTotal)}</td></tr><tr><td>Diskon</td><td>${formatNumber(diskon)}</td></tr><tr><td>PPN</td><td>${ppn ? formatNumber(ppn) : ''}</td></tr><tr><td>Total Invoice</td><td>${formatNumber(totalInvoice)}</td></tr></table><div class="payment-info">
 Pembayaran hanya dilakukan transfer ke<br><strong>Rekening BCA No: 8800983437</strong><br>
 atas nama: Ganjar Satyanagara
 </div><div class="signature">Authorized Signature</div></div></body></html>`;
@@ -1657,12 +1657,26 @@ showAlert('danger', 'Gagal: ' + result.message, 'masterDataAlert');
 }
 }
 let masterDataListCache = [];
+let masterProdukStockMap = null; // [F6-37 P2] peta id_produk -> stok hitungan mesin untuk kolom stok Master_Produk
 async function loadMasterDataList() {
 const jenis = document.getElementById('mdJenis').value;
 document.getElementById('mdListTableBody').innerHTML = '<tr><td>Memuat...</td></tr>';
 const result = await callGAS('getAll', { table: jenis });
 masterDataListCache = result.success ? result.data : [];
-if (jenis === 'Master_Produk') populateMdKategori();
+if (jenis === 'Master_Produk') {
+// [F6-37 P2] Kolom stok ditampilkan dari stok HITUNGAN mesin (getAllStock)
+// — satu pintu dengan tab Stock. Angka kolom 'stok' di sheet Master_Produk
+// bukan sumber kebenaran dan tidak pernah diubah mesin stok.
+masterProdukStockMap = null;
+try {
+const stRes = await callGAS('getAllStock', {}, 30000);
+if (stRes.success) {
+masterProdukStockMap = {};
+stRes.data.forEach(s => { masterProdukStockMap[(s.id_produk || '').toString()] = parseFloat(s.saldo) || 0; });
+}
+} catch (eS) { }
+populateMdKategori();
+}
 renderMasterDataList();
 }
 function renderMasterDataList() {
@@ -1681,8 +1695,16 @@ if (rows.length === 0) { body.innerHTML = `<tr><td colspan="${cols.length}" styl
 const editable = !!idField;
 body.innerHTML = rows.map(r => {
 const idVal = idField ? r[idField] : '';
+// [F6-37 P2] Kolom stok Master_Produk = stok hitungan mesin (1 pintu
+// dengan tab Stock), bukan angka mentah kolom 'stok' di sheet.
+const cellVal = c => {
+if (jenis === 'Master_Produk' && c === 'stok' && masterProdukStockMap) {
+return formatNumber(masterProdukStockMap[(r.id_produk || '').toString()] || 0);
+}
+return r[c] !== undefined ? r[c] : '';
+};
 const rowAttrs = editable ? `style="cursor:pointer;" onclick="loadMasterDataForEdit('${jenis}', '${(idVal || '').toString().replace(/'/g, "\\'")}')" title="Klik untuk edit"` : '';
-return `<tr ${rowAttrs}>` + cols.map(c => `<td>${r[c] !== undefined ? r[c] : ''}</td>`).join('') + '</tr>';
+return `<tr ${rowAttrs}>` + cols.map(c => `<td>${cellVal(c)}</td>`).join('') + '</tr>';
 }).join('');
 }
 // [fix #10] Muat satu baris data master ke form yang sama dipakai untuk
@@ -1732,6 +1754,27 @@ async function loadStockTable() {
 document.getElementById('stockTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray);">Memuat...</td></tr>';
 const result = await callGAS('getStockBreakdown', {});
 stockTableData = result.success ? result.data : [];
+// [F6-37 P3] Tampilkan SEMUA produk master — juga yang belum punya mutasi
+// sama sekali (selama ini produk tanpa mutasi tidak pernah dapat baris,
+// jadi "tidak muncul" di tab Stock). KECUALI Fix Asset/SDM: bukan
+// persediaan — kalau dijadikan stok, nilainya bisa kehitung dua kali di
+// Neraca (Aktiva Lancar vs Aktiva Tidak Lancar). Aturan yang sama dengan
+// dropdown Penjualan & submitOpname backend.
+try {
+const mpResult = await callGAS('getAll', { table: 'Master_Produk' });
+if (mpResult.success) {
+const nonStok = ['fa', 'fix asset', 'fixed asset', 'sdm'];
+const sudahAda = new Set(stockTableData.map(r => (r.id_produk || '').toString()));
+mpResult.data.forEach(p => {
+const id = (p.id_produk || '').toString();
+if (!id || sudahAda.has(id)) return;
+const kat = (p.kategori || '').toString().trim().toLowerCase();
+const tip = (p.tipe || '').toString().trim().toLowerCase();
+if (nonStok.includes(kat) || nonStok.includes(tip)) return;
+stockTableData.push({ id_produk: id, nama_produk: p.nama_produk || id, kategori: p.kategori || '', batch_no: '(belum ada mutasi)', tanggal: '', diproduksi: 0, terjual: 0, dipakai_assembly_lain: 0, sisa: 0, hpp_per_unit: 0, nilai_hpp: 0 });
+});
+}
+} catch (eZ) { /* zero-fill gagal -> tabel tampil apa adanya */ }
 const kategoriSelect = document.getElementById('stockKategoriFilter');
 const currentValue = kategoriSelect.value;
 const kategoris = [...new Set(stockTableData.map(r => r.kategori).filter(k => k))].sort();
@@ -2339,7 +2382,8 @@ selisih: parseFloat(document.getElementById('opSelisih').value) || 0,
 keterangan: document.getElementById('opKeterangan').value
 };
 const result = await callGAS('submitOpname', data);
-if (result.success) { showAlert('success', 'Opname berhasil! Selisih: ' + result.selisih, 'opnameAlert'); clearOpnameForm(); }
+// [F6-37 P1] Backend kini mengembalikan message (info koreksi stok / alasan dilewati)
+if (result.success) { showAlert('success', result.message || ('Opname berhasil! Selisih: ' + result.selisih), 'opnameAlert'); clearOpnameForm(); }
 else showAlert('danger', 'Gagal: ' + result.message, 'opnameAlert');
 }
 function clearOpnameForm() {
