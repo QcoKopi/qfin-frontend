@@ -416,7 +416,9 @@ return label.includes(searchTerm) || value.includes(searchTerm);
 list.innerHTML = filtered.map(item => {
 const value = item.id_produk || item.id_customer || item.id_supplier || item.id_salesman || item.coa || item.id_cash || item.id_resep || item.id_kemasan || item.id;
 const label = item.nama_produk || item.nama_customer || item.nama_supplier || item.nama_salesman || item.nama_akun || item.nama_cash || item.nama_resep || item.nama_kemasan || item.nama_barang || item.nama;
-const stockNote = (isPenjualanBarang && stockCache && stockCache[value] !== undefined) ? ` — stok ${formatNumber(stockCache[value])}` : '';
+// [F6-39] Mode Sewa: catatan stok di item dropdown juga disembunyikan.
+const kodePenNote = ((document.getElementById('penKodeTransaksi') || {}).value || '').toLowerCase();
+const stockNote = (isPenjualanBarang && kodePenNote !== 'sewa' && stockCache && stockCache[value] !== undefined) ? ` — stok ${formatNumber(stockCache[value])}` : '';
 return `<div class="dropdown-item" onclick="selectDropdown('${inputId}', '${value}', '${label.replace(/'/g, "\\'")}')">${label} (${value})${stockNote}</div>`;
 }).join('');
 list.classList.add('show');
@@ -1070,14 +1072,19 @@ datalist.innerHTML = batches.map(b => `<option value="${b.batch_no}">${b.tanggal
 if (batchInput) batchInput.value = batches.length > 0 ? batches[0].batch_no : '';
 // Apply stock info
 const stockLabel = document.getElementById(`pen-stock-${id}`);
+// [F6-39] Mode Sewa: stok tidak relevan sama sekali — info stok & banner
+// disembunyikan, field qty/harga TIDAK dikunci (sewa tidak butuh stok,
+// barangnya tetap ada).
+const kodePenItem = ((document.getElementById('penKodeTransaksi') || {}).value || '').toLowerCase();
+const isSewaItem = kodePenItem === 'sewa';
 const saldo = stockResult.success && stockResult.data ? (parseFloat(stockResult.data.saldo) || 0) : 0;
-if (stockLabel) stockLabel.textContent = `Stok saat ini: ${formatNumber(saldo)}`;
+if (stockLabel) stockLabel.textContent = isSewaItem ? '' : `Stok saat ini: ${formatNumber(saldo)}`;
 const qtyInputForMax = document.getElementById(`pen-qty-${id}`);
-if (qtyInputForMax) qtyInputForMax.max = saldo;
+if (qtyInputForMax) { if (isSewaItem) qtyInputForMax.removeAttribute('max'); else qtyInputForMax.max = saldo; }
 // Stock warning
 const nostockBanner = document.getElementById(`pen-nostock-${id}`);
 const fieldsToToggle = ['pen-qty', 'pen-price', 'pen-diskon', 'pen-batch'].map(p => document.getElementById(`${p}-${id}`));
-if (saldo <= 0) {
+if (!isSewaItem && saldo <= 0) {
 if (nostockBanner) {
 nostockBanner.style.display = '';
 nostockBanner.textContent = `Stok kosong. Buat Assembly dulu sebelum menjual.`;
