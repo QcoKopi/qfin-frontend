@@ -1274,11 +1274,28 @@ if (win) { win.document.write(html); win.document.close(); }
 // Jasa, abaikan stok). Pilihan barang yang sudah terisi dikosongkan supaya
 // dipilih ulang dari daftar yang benar untuk kode yang baru.
 function onPenKodeTransaksiChange() {
+const kodeBaru = ((document.getElementById('penKodeTransaksi') || {}).value || '').toLowerCase();
+const keSewa = kodeBaru === 'sewa';
 penjualanDetails.forEach(id => {
 const brg = document.getElementById(`pen-barang-${id}`);
 if (brg) { brg.value = ''; brg.dataset.value = ''; }
 const batch = document.getElementById(`pen-batch-${id}`);
 if (batch) batch.value = '';
+// [F6-39] Bersihkan juga UI stok yang sempat tampil SEBELUM kode diganti
+// (banner "Stok kosong" + field terkunci nempel kalau barang dipilih dulu
+// saat kode masih Penjualan). Pindah ke Sewa: sembunyikan & buka kunci;
+// pindah dari Sewa: biarkan — calculatePenjualanHPP() akan menilai ulang
+// saat barang dipilih lagi.
+if (keSewa) {
+const banner = document.getElementById(`pen-nostock-${id}`);
+if (banner) banner.style.display = 'none';
+const lbl = document.getElementById(`pen-stock-${id}`);
+if (lbl) lbl.textContent = '';
+['pen-qty', 'pen-price', 'pen-diskon', 'pen-batch'].forEach(p => {
+const f = document.getElementById(`${p}-${id}`);
+if (f) { f.disabled = false; if (p === 'pen-qty') f.removeAttribute('max'); }
+});
+}
 });
 }
 // FIX #2: Clear penTypeBayar properly on reset
