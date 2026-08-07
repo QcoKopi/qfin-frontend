@@ -1079,6 +1079,24 @@ kemasanInput.dataset.value = '';
 }
 if (jumlahKemasanInput) jumlahKemasanInput.value = '';
 }
+// [F6-44] Sewa: Kemasan, Jumlah Kemasan, Batch No tidak relevan (bukan
+// barang fisik yang keluar) — dikosongkan & TIDAK mandatory. Label wajib
+// dicabut/dikembalikan mengikuti pola wasMandatory seperti form Pembelian.
+function applySewaFieldRules(id, keSewa) {
+['pen-kemasan', 'pen-jumlah-kemasan', 'pen-batch'].forEach(p => {
+const f = document.getElementById(`${p}-${id}`);
+if (!f) return;
+const grp = f.closest('.form-group');
+const lbl = grp ? grp.querySelector('label') : null;
+if (keSewa) {
+f.value = '';
+if (p === 'pen-kemasan') f.dataset.value = '';
+if (lbl && lbl.classList.contains('mandatory-label')) { lbl.dataset.wasMandatory = 'true'; lbl.classList.remove('mandatory-label'); }
+} else {
+if (lbl && lbl.dataset.wasMandatory === 'true') { lbl.classList.add('mandatory-label'); delete lbl.dataset.wasMandatory; }
+}
+});
+}
 function addPenjualanDetail() {
 const id = penjualanDetails.length;
 const div = document.createElement('div'); div.className = 'detail-row'; div.id = `pen-detail-${id}`;
@@ -1086,6 +1104,10 @@ div.innerHTML = `
 <div class="detail-row-header"><span><strong>Barang #${id + 1}</strong></span><button class="btn-remove" onclick="removePenjualanDetail(${id})">Hapus</button></div><div class="alert alert-danger" id="pen-nostock-${id}" style="display:none;"></div><div class="form-grid"><div class="form-group"><label class="mandatory-label">Nama Barang</label><div class="searchable-dropdown"><input type="text" id="pen-barang-${id}" placeholder="Cari barang..." oninput="onDropdownInput('pen-barang-${id}', 'products')" onfocus="showDropdown('pen-barang-${id}')"><div class="dropdown-list" id="pen-barang-${id}-list"></div></div></div><div class="form-group"><label class="mandatory-label">Jumlah</label><input type="number" id="pen-qty-${id}" step="0.01" placeholder="0" onchange="validateQtyAgainstStock(${id}); calculatePenjualanItemTotal(${id}); onPenjualanQtyChange(${id})"></div><div class="form-group"><label class="mandatory-label">Harga Satuan</label><input type="number" id="pen-price-${id}" step="1000" placeholder="0" onchange="calculatePenjualanItemTotal(${id})"></div><div class="form-group"><label>Total</label><input type="number" id="pen-total-${id}" readonly placeholder="0"></div><div class="form-group"><label>Diskon</label><input type="number" id="pen-diskon-${id}" step="1000" value="0" onchange="calculatePenjualanItemTotal(${id})"></div><div class="form-group"><label>HPP (Auto)</label><input type="number" id="pen-hpp-${id}" readonly placeholder="0"></div><div class="form-group"><label class="mandatory-label">Kemasan</label><div class="searchable-dropdown"><input type="text" id="pen-kemasan-${id}" placeholder="Pilih kemasan..." oninput="filterKemasanDropdown(${id})" onfocus="filterKemasanDropdown(${id})"><div class="dropdown-list" id="pen-kemasan-${id}-list"></div></div></div><div class="form-group"><label class="mandatory-label">Jumlah Kemasan</label><input type="number" id="pen-jumlah-kemasan-${id}" step="1" placeholder="0"></div><div class="form-group"><label class="mandatory-label">Batch No</label><input type="text" id="pen-batch-${id}" placeholder="Batch No" list="pen-batch-list-${id}"><datalist id="pen-batch-list-${id}"></datalist><small id="pen-stock-${id}" style="color:var(--gray);font-size:11px;"></small></div></div>`;
 document.getElementById('penjualanDetails').appendChild(div);
 penjualanDetails.push(id);
+// [F6-44] Baris baru yang ditambah saat mode Sewa langsung mengikuti
+// aturan Sewa (kemasan & batch kosong + tidak mandatory).
+const kodePenAdd = ((document.getElementById('penKodeTransaksi') || {}).value || '').toLowerCase();
+if (kodePenAdd === 'sewa') applySewaFieldRules(id, true);
 }
 function removePenjualanDetail(id) { const el = document.getElementById(`pen-detail-${id}`); if (el) el.remove(); penjualanDetails = penjualanDetails.filter(i => i !== id); calculatePenjualanSummary(); }
 async function calculatePenjualanHPP(id) {
@@ -1377,6 +1399,9 @@ const f = document.getElementById(`${p}-${id}`);
 if (f) { f.disabled = false; if (p === 'pen-qty') f.removeAttribute('max'); }
 });
 }
+// [F6-44] Masuk Sewa: kemasan & batch dikosongkan + tidak mandatory;
+// keluar Sewa: tanda wajib dikembalikan.
+applySewaFieldRules(id, keSewa);
 });
 }
 // FIX #2: Clear penTypeBayar properly on reset
