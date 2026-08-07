@@ -292,23 +292,16 @@ masterData.produkOps = opsResult.data;
 setCache('Produk_ops', opsResult.data);
 }
 }
-// [F6-41] Daftar item hutang untuk mode 'Pembayaran Hutang' di form Pembelian.
-// Perintah eksplisit user: filter nama barang diabaikan, fokus pada produk di
-// Pembelian_App yang statusnya hutang. CATATAN DATA: ejaan status di
-// Pembelian_App adalah 'Belum Lunas' (yang MENGANDUNG kata 'lunas'), jadi
-// patokan belum lunas = status TIDAK DIAWALI 'lunas' — mencakup 'Belum Lunas'
-// dan 'Hutang' (opsi di dropdown status bayar form). Baris 'Pembayaran
-// Hutang' & 'Sample' itu sendiri dikeluarkan. Tidak di-cache di localStorage
-// — sisa hutang harus selalu segar.
+// [F6-46] Daftar hutang untuk mode 'Pembayaran Hutang' di form Pembelian.
+// (Menggantikan F6-41.) Sumber = endpoint getOpenHutangDocs: dokumen
+// hutang TERBUKA dengan SISA setelah alokasi pembayaran — nota
+// Pembelian_App + hutang Saldo Awal — angkanya sama persis dengan tab
+// Piutang & Hutang. Tidak di-cache di localStorage — sisa hutang harus
+// selalu segar.
 async function loadHutangItems() {
-const result = await callGAS('getAll', { table: 'Pembelian_App' }, 30000);
+const result = await callGAS('getOpenHutangDocs', {}, 30000);
 if (result && result.success && result.data) {
-masterData.hutangItems = result.data.filter(r => {
-const kode = (r.kode_transaksi || '').toString().trim().toLowerCase();
-if (kode === 'pembayaran hutang' || kode === 'sample') return false;
-const st = (r.status_bayar || '').toString().trim().toLowerCase();
-return st !== '' && st.indexOf('lunas') !== 0;
-});
+masterData.hutangItems = result.data;
 }
 return masterData.hutangItems;
 }
@@ -466,9 +459,9 @@ if (stockCache) data = data.filter(item => (stockCache[item.id_produk] || 0) > 0
 const maxResults = (dataType === 'coa') ? 500 : ((dataType === 'products' || dataType === 'kemasan') ? 500 : 50);
 const isHutangItems = (dataType === 'hutangItems');
 const filtered = data.filter(item => {
-// [F6-41] Mode hutang: cari bebas di nama barang + supplier + no dokumen.
+// [F6-46] Mode hutang: cari bebas di nama barang + supplier + no dokumen.
 if (isHutangItems) {
-const gab = ((item.nama_barang || '') + ' ' + (item.nama_supplier || '') + ' ' + (item.no_dokumen || '') + ' ' + (item.id_produk || '')).toLowerCase();
+const gab = ((item.nama_barang || '') + ' ' + (item.nama_supplier || '') + ' ' + (item.no_dokumen || '')).toLowerCase();
 return gab.includes(searchTerm);
 }
 const label = (item.nama_produk || item.nama_customer || item.nama_supplier || item.nama_salesman || item.nama_akun || item.nama_cash || item.nama_resep || item.nama_kemasan || item.nama_barang || item.nama || '').toLowerCase();
@@ -476,14 +469,17 @@ const value = (item.id_produk || item.id_customer || item.id_supplier || item.id
 return label.includes(searchTerm) || value.includes(searchTerm);
 }).slice(0, maxResults);
 list.innerHTML = filtered.map(item => {
-// [F6-41] Mode hutang: tampilkan konteks (supplier — no dokumen — nominal)
-// supaya jelas hutang nota mana yang dilunasi, tapi yang tersimpan sebagai
-// nama_barang/id_produk tetap nama & id produk asli dari nota pembeliannya.
+// [F6-46] Mode hutang: tampilkan SISA per dokumen (bukan nominal awal) +
+// konteks supplier/no dokumen; supplier ikut dioper supaya otomatis terisi
+// — pembayaran harus tercatat ke supplier yang sama agar alokasi FIFO di
+// rekonsiliasi memotong dokumen yang benar. Yang tersimpan: nama_barang =
+// nama barang/akun asal, dataset.value = no_dokumen sumbernya.
 if (isHutangItems) {
-const hValue = item.id_produk || item.id_pembelian || '';
+const hValue = (item.no_dokumen || '').replace(/'/g, "\\'");
 const hLabel = (item.nama_barang || '').replace(/'/g, "\\'");
-const hCtx = ' — ' + (item.nama_supplier || '-') + ' — ' + (item.no_dokumen || '-') + ' — Rp ' + formatNumber(item.total || 0);
-return `<div class="dropdown-item" onclick="selectDropdown('${inputId}', '${hValue}', '${hLabel}')">${item.nama_barang || ''} (${hValue})${hCtx}</div>`;
+const hSup = (item.nama_supplier || '').replace(/'/g, "\\'");
+const hCtx = ' — ' + (item.nama_supplier || '-') + ' — ' + (item.no_dokumen || '-') + ' — SISA Rp ' + formatNumber(item.sisa || 0) + ((item.terbayar || 0) > 0 ? ' (terbayar sebagian Rp ' + formatNumber(item.terbayar) + ')' : '');
+return `<div class="dropdown-item" onclick="selectDropdown('${inputId}', '${hValue}', '${hLabel}', '${hSup}')">${item.nama_barang || ''}${hCtx}</div>`;
 }
 const value = item.id_produk || item.id_customer || item.id_supplier || item.id_salesman || item.coa || item.id_cash || item.id_resep || item.id_kemasan || item.id;
 const label = item.nama_produk || item.nama_customer || item.nama_supplier || item.nama_salesman || item.nama_akun || item.nama_cash || item.nama_resep || item.nama_kemasan || item.nama_barang || item.nama;
@@ -505,10 +501,16 @@ if (inputId.includes('Cash')) return 'cash';
 if (inputId.includes('kemasan') || inputId.includes('Kemasan')) return 'kemasan';
 return 'products';
 }
-function selectDropdown(inputId, value, label) {
+function selectDropdown(inputId, value, label, supplierHutang) {
 const input = document.getElementById(inputId);
 input.value = label; input.dataset.value = value;
 document.getElementById(inputId + '-list').classList.remove('show');
+// [F6-46] Mode Pembayaran Hutang: kolom Supplier otomatis terisi dari
+// dokumen hutang yang dipilih (param ke-4 hanya dikirim cabang hutang).
+if (supplierHutang) {
+const supInput = document.getElementById('pemSupplier');
+if (supInput) { supInput.value = supplierHutang; supInput.dataset.value = supplierHutang; }
+}
 if (inputId === 'asmSku') { document.getElementById('asmNamaBarang').value = label.split(' (')[0]; loadRecipeForProduct(value); autoFillBatchNo(); }
 if (inputId === 'opProduk') fetchStockQty();
 const penBarangMatch = inputId.match(/^pen-barang-(\d+)$/);
