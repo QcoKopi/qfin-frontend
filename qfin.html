@@ -849,6 +849,14 @@ div.innerHTML = `
 
   document.getElementById('pembelianDetails').appendChild(div);
 pembelianDetails.push(id);
+// [F6-48] Mode Pembayaran Hutang: yang dibayar adalah NOMINAL, bukan
+// barang — Jumlah otomatis 1 supaya total = Harga Satuan (nominal bayar).
+// Sebelumnya Jumlah dibiarkan 0 → total 0 → baris tersimpan tapi hilang
+// diam-diam dari Buku Besar & rekonsiliasi hutang (guard total<=0 di GL).
+if (kode === 'Pembayaran Hutang') {
+const qtyEl = document.getElementById(`pem-qty-${id}`);
+if (qtyEl) qtyEl.value = 1;
+}
 }
 function removePembelianDetail(id) { const el = document.getElementById(`pem-detail-${id}`); if (el) el.remove(); pembelianDetails = pembelianDetails.filter(i => i !== id); }
 function generateKodeLotJS(tanggal, namaSupplier, idBarang) {
@@ -907,6 +915,18 @@ harga_satuan: parseFloat(document.getElementById(`pem-price-${id}`)?.value) || 0
 total: (parseFloat(document.getElementById(`pem-qty-${id}`)?.value) || 0) * (parseFloat(document.getElementById(`pem-price-${id}`)?.value) || 0),
 kode_lot: document.getElementById(`pem-lot-${id}`)?.value || ''
 })).filter(d => d.nama_barang);
+// [F6-48] Pembayaran Hutang: nominal wajib > 0. Baris ber-total 0 akan
+// tersimpan tapi TIDAK pernah muncul di Buku Besar maupun rekonsiliasi
+// hutang (guard total<=0 di GL) — tolak di sini dengan pesan yang jelas.
+if (kodeTransaksi === 'Pembayaran Hutang') {
+if (details.length === 0) {
+showAlert('danger', 'Pembayaran Hutang: pilih dulu dokumen hutang yang mau dibayar.', 'pembelianAlert'); return;
+}
+const barisNol = details.find(d => !(d.total > 0));
+if (barisNol) {
+showAlert('danger', 'Pembayaran Hutang: isi Harga Satuan dengan nominal yang dibayar — total tidak boleh 0 (baris "' + barisNol.nama_barang + '").', 'pembelianAlert'); return;
+}
+}
 const total = details.reduce((sum, d) => sum + d.total, 0);
 const data = {
 tanggal: document.getElementById('pemDate').value,
