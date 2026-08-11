@@ -1354,7 +1354,54 @@ loadRecentEntries('Penjualan_INV', 'penjualanRecentTable', [{field:'tanggal',lab
 showAlert('danger', 'Gagal: ' + result.message, 'penjualanAlert');
 }
 }
-function printInvoice(saleData) {
+// ============================================================
+// QR BATCH TRACKING DI INVOICE (F-QR1)
+// QR berisi URL https://qcoid.com/roasting.html?batch=<batch_no> —
+// scan langsung membuka halaman update batch itu. Teks label dicetak
+// di sekitar QR. Data batch dari Assembly_Entry (cache localStorage,
+// sama seperti loadMasterData — ikut terhapus tombol Clear Cache).
+// ============================================================
+const QFIN_ROASTING_URL = 'https://qcoid.com/roasting.html';
+const QFIN_BULAN_SINGKAT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+async function loadAssemblyBatchMap() {
+let rows = getCache('Assembly_Entry');
+if (!rows) {
+const result = await callGAS('getBulk', { tables: ['Assembly_Entry'] }, 90000);
+if (result && result.success && result.data && result.data.Assembly_Entry && result.data.Assembly_Entry.success) {
+rows = result.data.Assembly_Entry.data;
+setCache('Assembly_Entry', rows);
+}
+}
+const map = {};
+(rows || []).forEach(row => {
+const bn = (row.batch_no || '').toString().trim();
+if (!bn) return;
+if (!map[bn]) {
+map[bn] = { tanggal: row.tanggal || '', sku: row.sku || '', product: row.nama_barang || '', weight: parseFloat(row.jumlah_produksi) || 0, materials: [] };
+}
+const rm = (row.raw_material || '').toString().trim();
+if (rm && map[bn].materials.indexOf(rm) === -1) map[bn].materials.push(rm);
+});
+return map;
+}
+function parseTglLokalQfin(tgl) {
+if (!tgl) return null;
+const m = String(tgl).match(/(\d{4})-(\d{2})-(\d{2})/);
+if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+const d = new Date(tgl);
+return isNaN(d) ? null : d;
+}
+function fmtTglLabelIndo(tgl) {
+const d = parseTglLokalQfin(tgl);
+if (!d) return tgl ? String(tgl) : '-';
+return String(d.getDate()).padStart(2, '0') + ' ' + QFIN_BULAN_SINGKAT[d.getMonth()] + ' ' + d.getFullYear();
+}
+function clusterLabelByAge(ageDays) {
+if (ageDays <= 4) return 'Resting';
+if (ageDays <= 14) return 'Optimum';
+return 'Peak';
+}
+async function printInvoice(saleData) {
 const customer = (masterData.customers || []).find(c => c.nama_customer === saleData.customer) || {};
 const items = saleData.details || [];
 const subTotal = items.reduce((sum, d) => sum + (d.total || 0), 0);
@@ -1367,6 +1414,37 @@ const rowsHtml = items.map((d, i) => `
 <tr><td style="text-align:center;">${i + 1}</td><td>${d.nama_barang}${d.kemasan ? ' (' + d.kemasan + ')' : ''}</td><td style="text-align:center;">${d.jumlah}</td><td style="text-align:right;">${formatNumber(d.harga_satuan || 0)}</td><td style="text-align:right;">${formatNumber(d.total || 0)}</td></tr>`).join('');
 const emptyRowsNeeded = Math.max(0, 15 - items.length);
 const emptyRowsHtml = Array(emptyRowsNeeded).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr>').join('');
+// Kumpulkan semua batch_no dari detail (bisa multi-batch dipisah koma)
+const batchNos = [];
+items.forEach(d => {
+(d.batch_no || '').toString().split(',').forEach(b => {
+const bn = b.trim();
+if (bn && batchNos.indexOf(bn) === -1) batchNos.push(bn);
+});
+});
+let batchSectionHtml = '';
+if (batchNos.length > 0) {
+let batchMap = {};
+try { batchMap = await loadAssemblyBatchMap(); } catch (e) { console.warn('batch map:', e); }
+const escT = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const tglInvDate = parseTglLokalQfin(saleData.tanggal) || new Date();
+const labelsHtml = batchNos.map(bn => {
+const info = batchMap[bn];
+const qrTarget = QFIN_ROASTING_URL + '?batch=' + encodeURIComponent(bn);
+const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=' + encodeURIComponent(qrTarget);
+let dateStr = '-', productStr = 'data batch tidak ditemukan', weightStr = '-', materialStr = '-', clusterStr = '-';
+if (info) {
+dateStr = fmtTglLabelIndo(info.tanggal);
+productStr = info.product || '-';
+weightStr = (Math.round((info.weight || 0) * 100) / 100).toString() + ' kg';
+materialStr = info.materials.join(', ') || '-';
+const tglProd = parseTglLokalQfin(info.tanggal);
+if (tglProd) clusterStr = clusterLabelByAge(Math.max(0, Math.floor((tglInvDate - tglProd) / 86400000)));
+}
+return '<div class="batch-label"><div class="batch-qr"><img src="' + qrImg + '" width="90" height="90" alt="QR ' + escT(bn) + '"></div><div class="batch-text"><div class="batch-title">Q.co Coffee Lab \u2014 Batch Tracking</div><div class="batch-divider">\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500</div><div>Batch: <strong>' + escT(bn) + '</strong></div><div>Date: ' + escT(dateStr) + '</div><div>Product: ' + escT(productStr) + '</div><div>Weight: ' + escT(weightStr) + '</div><div>Material: ' + escT(materialStr) + '</div><div>Cluster: ' + escT(clusterStr) + '</div><div class="batch-divider">\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500</div><div>Update Roasting:</div><div>' + QFIN_ROASTING_URL + '</div></div></div>';
+}).join('');
+batchSectionHtml = '<div class="batch-section">' + labelsHtml + '</div>';
+}
 const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${saleData.no_invoice}</title><style>
 body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #222; }
 .invoice-box { max-width: 900px; margin: 0 auto; border: 3px solid #2451a6; padding: 24px; }
@@ -1386,16 +1464,27 @@ th { background: #eef2fb; text-align: left; }
 .totals-table td { border: 1px solid #999; padding: 5px 8px; }
 .totals-table td:first-child { font-weight: bold; }
 .totals-table td:last-child { text-align: right; }
+.batch-section { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 14px; }
+.batch-label { display: flex; gap: 12px; align-items: flex-start; border: 1px dashed #6F4E37; border-radius: 8px; padding: 10px 12px; font-size: 11px; line-height: 1.55; page-break-inside: avoid; }
+.batch-qr img { display: block; }
+.batch-title { font-weight: bold; }
+.batch-divider { color: #999; }
 .payment-info { font-size: 12px; margin-top: 16px; }
 .signature { text-align: right; margin-top: 60px; font-size: 13px; }
 .print-btn { margin: 16px auto; display: block; padding: 10px 24px; background: #2451a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
 @media print { .print-btn { display: none; } }
-</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><div class="invoice-box"><div class="header-row"><div><p class="company-name">Q.co Coffee Lab &amp; Roastery</p><p class="company-address">Ruko CItralake Sawangan Blok E01 - 18 Bojongsari Depok</p></div><div class="nomor-inv">Nomor Inv : ${saleData.no_invoice || ''}</div></div><div class="invoice-title">INVOICE</div><hr><div class="info-row"><div class="info-box"><div><strong>Nama</strong> &nbsp; ${saleData.customer || ''}</div><div><strong>Alamat</strong> &nbsp; ${customer.alamat || ''}</div><div><strong>Tlp</strong> &nbsp;&nbsp;&nbsp; ${customer.telepon || ''}</div></div><div class="info-box"><div><strong>Tanggal Inv</strong> &nbsp; ${tglInv}</div><div><strong>Tgl Jt Tempo</strong> &nbsp; ${tglJatuhTempo}</div><div><strong>No PO</strong></div><div><strong>No SJ</strong></div></div></div><table><thead><tr><th style="width:30px;">NO</th><th>Nama Barang</th><th style="width:60px;">QtY</th><th style="width:110px;">Harga / Unit</th><th style="width:120px;">TOTAL</th></tr></thead><tbody>${rowsHtml}${emptyRowsHtml}</tbody></table><table class="totals-table"><tr><td>Sub Total</td><td>${formatNumber(subTotal)}</td></tr><tr><td>Diskon</td><td>${formatNumber(diskon)}</td></tr><tr><td>PPN</td><td>${ppn ? formatNumber(ppn) : ''}</td></tr><tr><td>Total Invoice</td><td>${formatNumber(totalInvoice)}</td></tr></table><div class="payment-info">
+</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><div class="invoice-box"><div class="header-row"><div><p class="company-name">Q.co Coffee Lab &amp; Roastery</p><p class="company-address">Ruko CItralake Sawangan Blok E01 - 18 Bojongsari Depok</p></div><div class="nomor-inv">Nomor Inv : ${saleData.no_invoice || ''}</div></div><div class="invoice-title">INVOICE</div><hr><div class="info-row"><div class="info-box"><div><strong>Nama</strong> &nbsp; ${saleData.customer || ''}</div><div><strong>Alamat</strong> &nbsp; ${customer.alamat || ''}</div><div><strong>Tlp</strong> &nbsp;&nbsp;&nbsp; ${customer.telepon || ''}</div></div><div class="info-box"><div><strong>Tanggal Inv</strong> &nbsp; ${tglInv}</div><div><strong>Tgl Jt Tempo</strong> &nbsp; ${tglJatuhTempo}</div><div><strong>No PO</strong></div><div><strong>No SJ</strong></div></div></div><table><thead><tr><th style="width:30px;">NO</th><th>Nama Barang</th><th style="width:60px;">QtY</th><th style="width:110px;">Harga / Unit</th><th style="width:120px;">TOTAL</th></tr></thead><tbody>${rowsHtml}${emptyRowsHtml}</tbody></table><table class="totals-table"><tr><td>Sub Total</td><td>${formatNumber(subTotal)}</td></tr><tr><td>Diskon</td><td>${formatNumber(diskon)}</td></tr><tr><td>PPN</td><td>${ppn ? formatNumber(ppn) : ''}</td></tr><tr><td>Total Invoice</td><td>${formatNumber(totalInvoice)}</td></tr></table>${batchSectionHtml}<div class="payment-info">
 Pembayaran hanya dilakukan transfer ke<br><strong>Rekening BCA No: 8800983437</strong><br>
 atas nama: Ganjar Satyanagara
 </div><div class="signature">Authorized Signature</div></div></body></html>`;
 const win = window.open('', '_blank');
 if (win) { win.document.write(html); win.document.close(); }
+}
+// [F-QR1] Tombol "Cetak Invoice" — sebelumnya onclick ini tidak punya
+// fungsinya (ReferenceError). Cetak ulang invoice submit terakhir.
+function printLastInvoice() {
+if (!lastSubmittedSaleData) { showAlert('danger', 'Belum ada invoice yang disubmit pada sesi ini.', 'penjualanAlert'); return; }
+printInvoice(lastSubmittedSaleData);
 }
 // [F6-39] Ganti kode transaksi = aturan item berubah (Sewa: hanya Produk
 // Jasa, abaikan stok). Pilihan barang yang sudah terisi dikosongkan supaya
