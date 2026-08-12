@@ -536,7 +536,7 @@ const pemBarangMatch = inputId.match(/^pem-barang-(\d+)$/);
 if (pemBarangMatch) {
 const rowId = parseInt(pemBarangMatch[1], 10);
 updateKodeLotForRow(rowId);
-// [fix] Placeholder Harga Satuan dari rata-rata harga beli historis —
+// [fix] Placeholder Harga Satuan dari rata-rata harga beli historis—
 // tetap editable, cuma bantu isi awal.
 const priceInput = document.getElementById(`pem-price-${rowId}`);
 if (priceInput) {
