@@ -1,4 +1,4 @@
-<!-- QFin qfin.html — v2026.08.13-2 [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
+<!-- QFin qfin.html — v2026.08.13-3 [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
 :root {
 --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22;
@@ -268,6 +268,10 @@ return parsed.data;
 function setCache(key, data) {
 localStorage.setItem(CACHE_KEY + key, JSON.stringify({ timestamp: Date.now(), data }));
 }
+function bustStockLokal_() {
+localStorage.removeItem(CACHE_KEY + 'allstock_lokal');
+localStorage.removeItem(CACHE_KEY + 'breakdown_lokal');
+}
 async function loadMasterData() {
 const tables = ['Master_Produk', 'Master_Customer', 'Master_Supplier', 'Master_Salesman', 'Master_COA', 'Master_CashAccount', 'Master_Kemasan'];
 const missing = [];
@@ -330,23 +334,32 @@ let stockCache = null;
 let opnameStockById = null;
 let opnameIdByName = null;
 async function loadOpnameStockMap() {
-const result = await callGAS('getAllStock', {}, 30000, { silent: true });
+const cached = getCache('allstock_lokal');
+if (cached) { isiPetaStokOpname_(cached); return; }
+const result = await callGAS('getAllStock', {}, 120000, { silent: true });
 if (result && result.success && result.data) {
+setCache('allstock_lokal', result.data);
+isiPetaStokOpname_(result.data);
+}
+}
+function isiPetaStokOpname_(rows) {
 opnameStockById = {};
 opnameIdByName = {};
-result.data.forEach(s => {
+rows.forEach(s => {
 const sid = (s.id_produk || '').toString();
 opnameStockById[sid] = parseFloat(s.saldo) || 0;
 const nm = (s.nama_produk || '').toString().trim().toLowerCase();
 if (nm && !opnameIdByName[nm]) opnameIdByName[nm] = sid;
 });
 }
-}
 let hppCache = {};
 const HPP_CACHE_TTL = 5 * 60 * 1000;
 async function loadStockCacheForPenjualan() {
-const result = await callGAS('getAllStock', {}, 30000, { silent: true });
+const cached = getCache('allstock_lokal');
+if (cached) { stockCache = {}; cached.forEach(s => { stockCache[s.id_produk] = parseFloat(s.saldo) || 0; }); return; }
+const result = await callGAS('getAllStock', {}, 120000, { silent: true });
 if (result.success) {
+setCache('allstock_lokal', result.data);
 stockCache = {};
 result.data.forEach(s => { stockCache[s.id_produk] = parseFloat(s.saldo) || 0; });
 }
@@ -962,7 +975,8 @@ total_harga_material: totalMaterial, hpp: hpp, details: details
 const lanjutSubmit = await cekKonfirmasiAssembly(data);
 if (!lanjutSubmit) return;
 const result = await callGAS('submitAssembly', data);
-if (result.success) { showAlert('success', 'Assembly berhasil! ID: ' + result.id_assembly, 'assemblyAlert'); clearAssemblyForm(); loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang'}); }
+if (result.success) { showAlert('success', 'Assembly berhasil! ID: ' + result.id_assembly, 'assemblyAlert');
+bustStockLokal_(); clearAssemblyForm(); loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang'}); }
 else showAlert('danger', 'Gagal: ' + result.message, 'assemblyAlert');
 }
 function clearAssemblyForm() {
@@ -1082,7 +1096,8 @@ status_bayar: document.getElementById('pemStatusBayar').value, details: details
 // [F6-47] Batas tunggu submit dinaikkan 60s -> 120s sebagai pengaman —
 // backend sudah dipangkas jauh lebih cepat, ini jaga-jaga koneksi lambat.
 const result = await callGAS('submitPembelian', data, 120000);
-if (result.success) { showAlert('success', 'Pembelian berhasil! ID: ' + result.id_pembelian, 'pembelianAlert'); clearPembelianForm(); loadRecentEntries('Pembelian_App', 'pembelianRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'nama_supplier',label:'Supplier'},{field:'nama_barang',label:'Barang'},{field:'total',label:'Total',format:'number'}], 'kode_transaksi', 'Sample'); }
+if (result.success) { showAlert('success', 'Pembelian berhasil! ID: ' + result.id_pembelian, 'pembelianAlert');
+bustStockLokal_(); clearPembelianForm(); loadRecentEntries('Pembelian_App', 'pembelianRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'nama_supplier',label:'Supplier'},{field:'nama_barang',label:'Barang'},{field:'total',label:'Total',format:'number'}], 'kode_transaksi', 'Sample'); }
 else showAlert('danger', 'Gagal: ' + result.message, 'pembelianAlert');
 }
 function clearPembelianForm() {
@@ -1469,6 +1484,7 @@ details: details
 };
 const result = await callGAS('submitPenjualan', data);
 if (result.success) {
+bustStockLokal_();
 // F6-33: pakai nomor FINAL dari server (backend menambahkan suffix kode
 // customer, mis. INV1486-CUS0004) — form, cetakan, dan pesan harus sama.
 if (result.no_invoice) {
@@ -2181,7 +2197,7 @@ if (jenis === 'Master_Produk') {
 // bukan sumber kebenaran dan tidak pernah diubah mesin stok.
 masterProdukStockMap = null;
 try {
-const stRes = await callGAS('getAllStock', {}, 30000, { silent: true });
+const stRes = await callGAS('getAllStock', {}, 120000, { silent: true });
 if (stRes.success) {
 masterProdukStockMap = {};
 stRes.data.forEach(s => { masterProdukStockMap[(s.id_produk || '').toString()] = parseFloat(s.saldo) || 0; });
@@ -2264,8 +2280,14 @@ if (cancelBtnEl) cancelBtnEl.style.display = 'none';
 // ============================================================
 async function loadStockTable() {
 document.getElementById('stockTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray);">Memuat...</td></tr>';
-const result = await callGAS('getStockBreakdown', {});
+const cachedBd = getCache('breakdown_lokal');
+let result = null;
+if (cachedBd) { stockTableData = cachedBd; }
+else {
+result = await callGAS('getStockBreakdown', {}, 120000, { silent: true });
 stockTableData = result.success ? result.data : [];
+if (result.success) setCache('breakdown_lokal', result.data);
+}
 // [F6-37 P3] Tampilkan SEMUA produk master — juga yang belum punya mutasi
 // sama sekali (selama ini produk tanpa mutasi tidak pernah dapat baris,
 // jadi "tidak muncul" di tab Stock). KECUALI Fix Asset/SDM: bukan
@@ -2907,6 +2929,7 @@ keterangan: document.getElementById('opKeterangan').value
 const result = await callGAS('submitOpname', data);
 // [F6-37 P1] Backend kini mengembalikan message (info koreksi stok / alasan dilewati)
 if (result.success) {
+bustStockLokal_();
 // [F6-42] Stok produk ini sekarang = qty fisik — perbarui peta lokal
 // supaya opname berikutnya tidak perlu memuat ulang dari backend.
 if (opnameStockById) {
@@ -2939,7 +2962,8 @@ referensi: document.getElementById('movRef').value,
 keterangan: document.getElementById('movKeterangan').value
 };
 const result = await callGAS('submitMovement', data);
-if (result.success) { showAlert('success', 'Movement berhasil! Saldo: ' + result.saldo, 'movementAlert'); clearMovementForm(); }
+if (result.success) { showAlert('success', 'Movement berhasil! Saldo: ' + result.saldo, 'movementAlert');
+bustStockLokal_(); clearMovementForm(); }
 else showAlert('danger', 'Gagal: ' + result.message, 'movementAlert');
 }
 function clearMovementForm() {
