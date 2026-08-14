@@ -1,4 +1,4 @@
-<!-- QFin qfin.html — v2026.08.15-3 [F-QR5: label QR BATCH untuk Assembly — tombol "Print Label QR" langsung muncul setelah submit produksi berhasil + tombol QR per baris di daftar Assembly terakhir (reprint kapan saja); format label sama dengan tab Label QR] [F-QR4: label QR bisa dicetak dari Penjualan & Pembelian — tombol QR per baris di daftar entri terakhir (LOT dari kode_lot pembelian, BATCH per invoice lewat getQrBatchInvoice) + tombol Print Label QR langsung muncul setelah submit berhasil; pembangun label diekstrak ke printLabelsQR_ bersama] [F-AUDITMINUS-UI: tabel detail Audit Stok Minus tampil di kartu (status berwarna per produk), tidak cuma ringkasan] [F-CACHEBATAL: hppCache (batch & sisa stok di form penjualan) ikut dikosongkan saat bustStockLokal_ dan setelah pembatalan berhasil — entry ulang setelah batal tidak lagi ditolak validasi batch basi] [F-AUDITCLEAN: tombol perbaikan satu-kali di tab Audit (Perbaiki Referensi Lama, Bersihkan Movement Sewa, Koreksi Batch INV1441/1446, Backfill Batch Lama, Backfill QR Registry) dihapus dari frontend — fungsi tetap ada di backend, jalankan lewat editor GAS bila perlu] [F-AUDITMINUS: kartu Audit Stok Minus (Kronologis) di tab Audit — tombol + ringkasan chip merah/kuning/abu + jalankanAuditMinus()] [F-BATAL5: teks konfirmasi pembatalan pembelian diperbarui mengikuti aturan baru — DITOLAK hanya kalau membuat minus BARU (barang dokumen terpakai setelah tanggal dokumen); minus warisan tidak menghalangi] [F-BATAL4: teks konfirmasi pembatalan pembelian menuliskan aturan stok ≥ jumlah dokumen + baris biaya tidak menghalangi] [F-QR2: tab Label QR — cetak label QR container dari QR_Registry (BATCH & LOT); tombol Backfill QR Registry di tab Audit] [F-CARI2: kotak pencarian juga di Assembly & Kas Masuk; tombol Batalkan di Kas Masuk (kas otomatis dari penjualan tetap harus lewat invoice)] [F-MDHAPUS: kolom Hapus di tabel Data yang Sudah Ada (Master Data) — backend menolak kalau sudah dipakai transaksi] [F-CARI1: kotak pencarian di atas tabel 5 Entry Terakhir Penjualan & Pembelian — temukan entri lama di luar 5 terbaru (maks 20 hasil), tombol Batalkan tetap termuat; debounce 400 msd] [tab Audit: tombol Backfill Batch Lama (isi batch_no kosong sesuai ledger FIFO, satu kali); aksi backfill masuk daftar aksi-tulis (tidak pernah auto-retry)] [F-BATCHWAJIB: validasi batch sebelum submit — produk ber-batch wajib batch dari daftar + qty ≤ sisa (kunci tetap di backend); daftar batch disimpan per baris saat produk dipilih] [tab Audit: tombol Koreksi Batch INV1441/1446 (satu kali)] [callGAS: retry otomatis 1x utk aksi baca (cold start GAS) + pesan error jujur — timeout tidak lagi menyalahkan URL; aksi tulis tidak pernah auto-retry (anti dobel)] [tab Audit: tombol Bersihkan Movement Sewa (hapus movement hantu produk Jasa, satu kali)] [tab Audit: tombol Perbaiki Referensi Lama (PEN<angka> → no_invoice, satu kali) + jenis LEGACY-TERSERAP-OPNAME abu-abu bukan temuan] [tab Audit: jalankan Audit Integritas Transaksi + Audit Stok Baseline dari frontend, hasil langsung tampil] [tombol Batalkan di 5 entry terakhir Penjualan & Pembelian + konfirmasi detail penghapusan] [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
+<!-- QFin qfin.html — v2026.08.15-4 [F-QR6: label LOT pembelian polos tanpa QR & tanpa tautan qco.id — cukup info Lot/Tanggal/Produk/Berat/Supplier; QR tetap untuk label BATCH] [F-LISTDBG: daftar entri terakhir kini menampilkan PESAN ERROR asli dari server (bukan diam "Belum ada data"/stuck Memuat) supaya penyebab gagal muat langsung kelihatan] [F-QR5: label QR BATCH untuk Assembly — tombol "Print Label QR" langsung muncul setelah submit produksi berhasil + tombol QR per baris di daftar Assembly terakhir (reprint kapan saja); format label sama dengan tab Label QR] [F-QR4: label QR bisa dicetak dari Penjualan & Pembelian — tombol QR per baris di daftar entri terakhir (LOT dari kode_lot pembelian, BATCH per invoice lewat getQrBatchInvoice) + tombol Print Label QR langsung muncul setelah submit berhasil; pembangun label diekstrak ke printLabelsQR_ bersama] [F-AUDITMINUS-UI: tabel detail Audit Stok Minus tampil di kartu (status berwarna per produk), tidak cuma ringkasan] [F-CACHEBATAL: hppCache (batch & sisa stok di form penjualan) ikut dikosongkan saat bustStockLokal_ dan setelah pembatalan berhasil — entry ulang setelah batal tidak lagi ditolak validasi batch basi] [F-AUDITCLEAN: tombol perbaikan satu-kali di tab Audit (Perbaiki Referensi Lama, Bersihkan Movement Sewa, Koreksi Batch INV1441/1446, Backfill Batch Lama, Backfill QR Registry) dihapus dari frontend — fungsi tetap ada di backend, jalankan lewat editor GAS bila perlu] [F-AUDITMINUS: kartu Audit Stok Minus (Kronologis) di tab Audit — tombol + ringkasan chip merah/kuning/abu + jalankanAuditMinus()] [F-BATAL5: teks konfirmasi pembatalan pembelian diperbarui mengikuti aturan baru — DITOLAK hanya kalau membuat minus BARU (barang dokumen terpakai setelah tanggal dokumen); minus warisan tidak menghalangi] [F-BATAL4: teks konfirmasi pembatalan pembelian menuliskan aturan stok ≥ jumlah dokumen + baris biaya tidak menghalangi] [F-QR2: tab Label QR — cetak label QR container dari QR_Registry (BATCH & LOT); tombol Backfill QR Registry di tab Audit] [F-CARI2: kotak pencarian juga di Assembly & Kas Masuk; tombol Batalkan di Kas Masuk (kas otomatis dari penjualan tetap harus lewat invoice)] [F-MDHAPUS: kolom Hapus di tabel Data yang Sudah Ada (Master Data) — backend menolak kalau sudah dipakai transaksi] [F-CARI1: kotak pencarian di atas tabel 5 Entry Terakhir Penjualan & Pembelian — temukan entri lama di luar 5 terbaru (maks 20 hasil), tombol Batalkan tetap termuat; debounce 400 msd] [tab Audit: tombol Backfill Batch Lama (isi batch_no kosong sesuai ledger FIFO, satu kali); aksi backfill masuk daftar aksi-tulis (tidak pernah auto-retry)] [F-BATCHWAJIB: validasi batch sebelum submit — produk ber-batch wajib batch dari daftar + qty ≤ sisa (kunci tetap di backend); daftar batch disimpan per baris saat produk dipilih] [tab Audit: tombol Koreksi Batch INV1441/1446 (satu kali)] [callGAS: retry otomatis 1x utk aksi baca (cold start GAS) + pesan error jujur — timeout tidak lagi menyalahkan URL; aksi tulis tidak pernah auto-retry (anti dobel)] [tab Audit: tombol Bersihkan Movement Sewa (hapus movement hantu produk Jasa, satu kali)] [tab Audit: tombol Perbaiki Referensi Lama (PEN<angka> → no_invoice, satu kali) + jenis LEGACY-TERSERAP-OPNAME abu-abu bukan temuan] [tab Audit: jalankan Audit Integritas Transaksi + Audit Stok Baseline dari frontend, hasil langsung tampil] [tombol Batalkan di 5 entry terakhir Penjualan & Pembelian + konfirmasi detail penghapusan] [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
 :root {
 --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22;
@@ -752,18 +752,30 @@ if (!terpilih || !terpilih.length) return;
 const escT = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const labelsHtml = terpilih.map(r => {
 const kode = (r.kode || '').toString();
-const qrUrl = (r.qr_url || '').toString() || (QFIN_ROASTING_URL + '?' + (r.jenis === 'LOT' ? 'lot' : 'batch') + '=' + encodeURIComponent(kode));
-const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=' + encodeURIComponent(qrUrl);
 const isLot = (r.jenis || '') === 'LOT';
-return '<div class="batch-label"><div class="batch-qr"><img src="' + qrImg + '" width="90" height="90" alt="QR ' + escT(kode) + '"></div>' +
-'<div class="batch-text"><div class="batch-title">Q.co Coffee Lab \u2014 ' + (isLot ? 'Lot Bahan' : 'Batch Tracking') + '</div>' +
-'<div class="batch-divider">\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500</div>' +
-'<div>' + (isLot ? 'Lot' : 'Batch') + ': <strong>' + escT(kode) + '</strong></div>' +
+const garis = '<div class="batch-divider">\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500</div>';
+const infoBerat = '<div>Weight: ' + escT((Math.round((parseFloat(r.qty) || 0) * 100) / 100).toString()) + ' kg</div>';
+// [F-QR6] Label LOT (pembelian) polos — TANPA QR & tanpa tautan qco.id,
+// cukup informasi lot-nya saja. QR + tautan tetap untuk label BATCH.
+if (isLot) {
+return '<div class="batch-label"><div class="batch-text"><div class="batch-title">Q.co Coffee Lab \u2014 Lot Bahan</div>' +
+garis +
+'<div>Lot: <strong>' + escT(kode) + '</strong></div>' +
 '<div>Date: ' + escT(fmtTglLabelIndo(r.tanggal)) + '</div>' +
 '<div>Product: ' + escT(r.nama_produk || '-') + '</div>' +
-'<div>Weight: ' + escT((Math.round((parseFloat(r.qty) || 0) * 100) / 100).toString()) + ' kg</div>' +
-(isLot ? '<div>Supplier: ' + escT(r.supplier || '-') + '</div>' : '') +
-'<div class="batch-divider">\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500</div>' +
+infoBerat +
+'<div>Supplier: ' + escT(r.supplier || '-') + '</div></div></div>';
+}
+const qrUrl = (r.qr_url || '').toString() || (QFIN_ROASTING_URL + '?batch=' + encodeURIComponent(kode));
+const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=' + encodeURIComponent(qrUrl);
+return '<div class="batch-label"><div class="batch-qr"><img src="' + qrImg + '" width="90" height="90" alt="QR ' + escT(kode) + '"></div>' +
+'<div class="batch-text"><div class="batch-title">Q.co Coffee Lab \u2014 Batch Tracking</div>' +
+garis +
+'<div>Batch: <strong>' + escT(kode) + '</strong></div>' +
+'<div>Date: ' + escT(fmtTglLabelIndo(r.tanggal)) + '</div>' +
+'<div>Product: ' + escT(r.nama_produk || '-') + '</div>' +
+infoBerat +
+garis +
 '<div>Scan untuk update:</div><div>' + escT(qrUrl) + '</div></div></div>';
 }).join('');
 const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label QR Container</title><style>' +
@@ -2695,8 +2707,15 @@ body.innerHTML = `<tr><td colspan="${nCols}" style="text-align:center;color:var(
 const params = { table: table, limit: 5 };
 if (excludeField) { params.exclude_field = excludeField; params.exclude_value = excludeValue; }
 if (search) params.search = search;
-const result = await callGAS('getRecentEntries', params, 60000, { silent: true });
-if (!result.success || !result.data || result.data.length === 0) {
+let result;
+try { result = await callGAS('getRecentEntries', params, 60000, { silent: true }); }
+catch (eG) { result = { success: false, message: (eG && eG.toString()) || 'error tak dikenal' }; }
+// [F-LISTDBG] bedakan GAGAL (tampilkan pesan asli server) dari data memang kosong
+if (!result || !result.success) {
+body.innerHTML = `<tr><td colspan="${nCols}" style="text-align:center;color:var(--danger);">Gagal memuat: ${(result && result.message) || 'tidak ada respons dari server'}</td></tr>`;
+return;
+}
+if (!result.data || result.data.length === 0) {
 body.innerHTML = `<tr><td colspan="${nCols}" style="text-align:center;color:var(--gray);">Belum ada data</td></tr>`;
 return;
 }
