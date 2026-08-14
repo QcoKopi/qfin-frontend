@@ -1,4 +1,4 @@
-<!-- QFin qfin.html — v2026.08.13-7 [tab Audit: tombol Bersihkan Movement Sewa (hapus movement hantu produk Jasa, satu kali)] [tab Audit: tombol Perbaiki Referensi Lama (PEN<angka> → no_invoice, satu kali) + jenis LEGACY-TERSERAP-OPNAME abu-abu bukan temuan] [tab Audit: jalankan Audit Integritas Transaksi + Audit Stok Baseline dari frontend, hasil langsung tampil] [tombol Batalkan di 5 entry terakhir Penjualan & Pembelian + konfirmasi detail penghapusan] [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
+<!-- QFin qfin.html — v2026.08.14-1 [callGAS: retry otomatis 1x utk aksi baca (cold start GAS) + pesan error jujur — timeout tidak lagi menyalahkan URL; aksi tulis tidak pernah auto-retry (anti dobel)] [tab Audit: tombol Bersihkan Movement Sewa (hapus movement hantu produk Jasa, satu kali)] [tab Audit: tombol Perbaiki Referensi Lama (PEN<angka> → no_invoice, satu kali) + jenis LEGACY-TERSERAP-OPNAME abu-abu bukan temuan] [tab Audit: jalankan Audit Integritas Transaksi + Audit Stok Baseline dari frontend, hasil langsung tampil] [tombol Batalkan di 5 entry terakhir Penjualan & Pembelian + konfirmasi detail penghapusan] [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
 :root {
 --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22;
@@ -211,12 +211,20 @@ function saveGasUrl() {
 const url = document.getElementById('gasUrl').value;
 if (url) { localStorage.setItem('qfin_gas_url', url); showAlert('success', 'GAS URL saved'); }
 }
-// [P2 FIXED v1] callGAS: JSONP dengan cleanup agresif (tidak menumpuk script tags)
+// [P2 FIXED v2] callGAS: JSONP dengan cleanup agresif + RETRY OTOMATIS 1x
+// untuk aksi BACA (cold start GAS sering membuat request pertama timeout —
+// retry transparan setelah jeda 3 dtk, tanpa perlu ritual Save URL).
+// Aksi TULIS (submit/batalkan/dll) TIDAK pernah di-retry otomatis: request
+// yang timeout bisa saja sudah tereksekusi di server — retry = data dobel.
 let __qfinJsonpSeq = 0;
+const QFIN_AKSI_TULIS = /^(submit|batalkan|perbaiki|bersihkan|koreksi|resync|simpan|hapus|update|create|delete|save)/i;
 function callGAS(action, data = {}, timeoutMs = 60000, opts = {}) {
+const aksiTulis = QFIN_AKSI_TULIS.test(action);
+const bolehRetry = !opts.noRetry && !aksiTulis;
 return new Promise((resolve) => {
 const url = getGasUrl();
-if (!url) { showAlert('danger', 'GAS URL not configured'); resolve({ success: false }); return; }
+if (!url) { showAlert('danger', 'GAS URL kosong — paste URL /exec lalu klik Save URL.'); resolve({ success: false }); return; }
+const coba = (percobaanKe) => {
 if (!opts.silent) showLoading(true);
 const callbackName = '__qfin_cb_' + (Date.now()) + '_' + (__qfinJsonpSeq++);
 const qs = new URLSearchParams();
@@ -243,17 +251,32 @@ cleanup();
 if (!opts.silent) showLoading(false);
 resolve(result);
 };
-const timeoutId = setTimeout(() => {
-showAlert('danger', 'Request timeout - cek GAS URL / deployment access.');
-finish({ success: false, message: 'Request timeout' });
-}, timeoutMs);
-window[callbackName] = function(result) { finish(result); };
-script.onerror = function() {
-showAlert('danger', 'Gagal terhubung ke GAS. Cek GAS URL & deployment (Anyone can access).');
-finish({ success: false, message: 'Network error calling GAS' });
+const gagalSementara = (jenis) => {
+if (settled) return;
+settled = true;
+cleanup();
+if (bolehRetry && percobaanKe === 1) {
+setTimeout(() => coba(2), 3000); // cold start GAS: coba sekali lagi, diam-diam
+return;
+}
+if (!opts.silent) showLoading(false);
+if (jenis === 'timeout') {
+showAlert('danger', aksiTulis
+? 'GAS lambat merespons (biasanya cold start setelah lama diam). PENTING: jangan langsung kirim ulang — cek dulu apakah data sudah tercatat, supaya tidak dobel.'
+: 'GAS lambat merespons (biasanya cold start setelah lama diam). Sudah dicoba ulang otomatis — tunggu ±30 detik lalu klik lagi.');
+resolve({ success: false, message: 'Request timeout' });
+} else {
+showAlert('danger', 'Tidak bisa menghubungi GAS — cek koneksi internet. Kalau baru deploy pertama kali, pastikan akses "Anyone".');
+resolve({ success: false, message: 'Network error calling GAS' });
+}
 };
+const timeoutId = setTimeout(() => { gagalSementara('timeout'); }, timeoutMs);
+window[callbackName] = function(result) { finish(result); };
+script.onerror = function() { gagalSementara('network'); };
 script.src = url + (url.includes('?') ? '&' : '?') + qs.toString();
 document.head.appendChild(script);
+};
+coba(1);
 });
 }
 function getCache(key) {
