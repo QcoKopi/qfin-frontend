@@ -1,4 +1,4 @@
-<!-- QFin qfin.html — v2026.08.15-1 [F-AUDITMINUS-UI: tabel detail Audit Stok Minus tampil di kartu (status berwarna per produk), tidak cuma ringkasan] [F-CACHEBATAL: hppCache (batch & sisa stok di form penjualan) ikut dikosongkan saat bustStockLokal_ dan setelah pembatalan berhasil — entry ulang setelah batal tidak lagi ditolak validasi batch basi] [F-AUDITCLEAN: tombol perbaikan satu-kali di tab Audit (Perbaiki Referensi Lama, Bersihkan Movement Sewa, Koreksi Batch INV1441/1446, Backfill Batch Lama, Backfill QR Registry) dihapus dari frontend — fungsi tetap ada di backend, jalankan lewat editor GAS bila perlu] [F-AUDITMINUS: kartu Audit Stok Minus (Kronologis) di tab Audit — tombol + ringkasan chip merah/kuning/abu + jalankanAuditMinus()] [F-BATAL5: teks konfirmasi pembatalan pembelian diperbarui mengikuti aturan baru — DITOLAK hanya kalau membuat minus BARU (barang dokumen terpakai setelah tanggal dokumen); minus warisan tidak menghalangi] [F-BATAL4: teks konfirmasi pembatalan pembelian menuliskan aturan stok ≥ jumlah dokumen + baris biaya tidak menghalangi] [F-QR2: tab Label QR — cetak label QR container dari QR_Registry (BATCH & LOT); tombol Backfill QR Registry di tab Audit] [F-CARI2: kotak pencarian juga di Assembly & Kas Masuk; tombol Batalkan di Kas Masuk (kas otomatis dari penjualan tetap harus lewat invoice)] [F-MDHAPUS: kolom Hapus di tabel Data yang Sudah Ada (Master Data) — backend menolak kalau sudah dipakai transaksi] [F-CARI1: kotak pencarian di atas tabel 5 Entry Terakhir Penjualan & Pembelian — temukan entri lama di luar 5 terbaru (maks 20 hasil), tombol Batalkan tetap termuat; debounce 400 msd] [tab Audit: tombol Backfill Batch Lama (isi batch_no kosong sesuai ledger FIFO, satu kali); aksi backfill masuk daftar aksi-tulis (tidak pernah auto-retry)] [F-BATCHWAJIB: validasi batch sebelum submit — produk ber-batch wajib batch dari daftar + qty ≤ sisa (kunci tetap di backend); daftar batch disimpan per baris saat produk dipilih] [tab Audit: tombol Koreksi Batch INV1441/1446 (satu kali)] [callGAS: retry otomatis 1x utk aksi baca (cold start GAS) + pesan error jujur — timeout tidak lagi menyalahkan URL; aksi tulis tidak pernah auto-retry (anti dobel)] [tab Audit: tombol Bersihkan Movement Sewa (hapus movement hantu produk Jasa, satu kali)] [tab Audit: tombol Perbaiki Referensi Lama (PEN<angka> → no_invoice, satu kali) + jenis LEGACY-TERSERAP-OPNAME abu-abu bukan temuan] [tab Audit: jalankan Audit Integritas Transaksi + Audit Stok Baseline dari frontend, hasil langsung tampil] [tombol Batalkan di 5 entry terakhir Penjualan & Pembelian + konfirmasi detail penghapusan] [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
+<!-- QFin qfin.html — v2026.08.15-3 [F-QR5: label QR BATCH untuk Assembly — tombol "Print Label QR" langsung muncul setelah submit produksi berhasil + tombol QR per baris di daftar Assembly terakhir (reprint kapan saja); format label sama dengan tab Label QR] [F-QR4: label QR bisa dicetak dari Penjualan & Pembelian — tombol QR per baris di daftar entri terakhir (LOT dari kode_lot pembelian, BATCH per invoice lewat getQrBatchInvoice) + tombol Print Label QR langsung muncul setelah submit berhasil; pembangun label diekstrak ke printLabelsQR_ bersama] [F-AUDITMINUS-UI: tabel detail Audit Stok Minus tampil di kartu (status berwarna per produk), tidak cuma ringkasan] [F-CACHEBATAL: hppCache (batch & sisa stok di form penjualan) ikut dikosongkan saat bustStockLokal_ dan setelah pembatalan berhasil — entry ulang setelah batal tidak lagi ditolak validasi batch basi] [F-AUDITCLEAN: tombol perbaikan satu-kali di tab Audit (Perbaiki Referensi Lama, Bersihkan Movement Sewa, Koreksi Batch INV1441/1446, Backfill Batch Lama, Backfill QR Registry) dihapus dari frontend — fungsi tetap ada di backend, jalankan lewat editor GAS bila perlu] [F-AUDITMINUS: kartu Audit Stok Minus (Kronologis) di tab Audit — tombol + ringkasan chip merah/kuning/abu + jalankanAuditMinus()] [F-BATAL5: teks konfirmasi pembatalan pembelian diperbarui mengikuti aturan baru — DITOLAK hanya kalau membuat minus BARU (barang dokumen terpakai setelah tanggal dokumen); minus warisan tidak menghalangi] [F-BATAL4: teks konfirmasi pembatalan pembelian menuliskan aturan stok ≥ jumlah dokumen + baris biaya tidak menghalangi] [F-QR2: tab Label QR — cetak label QR container dari QR_Registry (BATCH & LOT); tombol Backfill QR Registry di tab Audit] [F-CARI2: kotak pencarian juga di Assembly & Kas Masuk; tombol Batalkan di Kas Masuk (kas otomatis dari penjualan tetap harus lewat invoice)] [F-MDHAPUS: kolom Hapus di tabel Data yang Sudah Ada (Master Data) — backend menolak kalau sudah dipakai transaksi] [F-CARI1: kotak pencarian di atas tabel 5 Entry Terakhir Penjualan & Pembelian — temukan entri lama di luar 5 terbaru (maks 20 hasil), tombol Batalkan tetap termuat; debounce 400 msd] [tab Audit: tombol Backfill Batch Lama (isi batch_no kosong sesuai ledger FIFO, satu kali); aksi backfill masuk daftar aksi-tulis (tidak pernah auto-retry)] [F-BATCHWAJIB: validasi batch sebelum submit — produk ber-batch wajib batch dari daftar + qty ≤ sisa (kunci tetap di backend); daftar batch disimpan per baris saat produk dipilih] [tab Audit: tombol Koreksi Batch INV1441/1446 (satu kali)] [callGAS: retry otomatis 1x utk aksi baca (cold start GAS) + pesan error jujur — timeout tidak lagi menyalahkan URL; aksi tulis tidak pernah auto-retry (anti dobel)] [tab Audit: tombol Bersihkan Movement Sewa (hapus movement hantu produk Jasa, satu kali)] [tab Audit: tombol Perbaiki Referensi Lama (PEN<angka> → no_invoice, satu kali) + jenis LEGACY-TERSERAP-OPNAME abu-abu bukan temuan] [tab Audit: jalankan Audit Integritas Transaksi + Audit Stok Baseline dari frontend, hasil langsung tampil] [tombol Batalkan di 5 entry terakhir Penjualan & Pembelian + konfirmasi detail penghapusan] [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
 :root {
 --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22;
@@ -648,7 +648,7 @@ const CFG = {
 assembly: {
 teks: 'Batalkan assembly batch "' + id + '" (' + label + ')?\n\nSemua baris batch ini di SEMUA tabel akan dihapus sekaligus:\n- Assembly_Entry\n- Movement Masuk produk & Keluar bahan\n- HPP\n\nBahan kembali ke stok, produk jadi berkurang. Lanjutkan?',
 data: { batch_no: id }, action: 'batalkanAssembly', alertId: 'assemblyAlert',
-reload: () => loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang'})
+reload: () => loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang', qrJenis:'BATCH'})
 },
 opname: {
 teks: 'Batalkan opname "' + id + '" (' + label + ')?\n\nBaris opname + movement koreksinya akan dihapus sekaligus. Stok kembali seperti sebelum opname. Lanjutkan?',
@@ -658,12 +658,12 @@ reload: () => loadOpnameRecent(true)
 penjualan: {
 teks: 'Batalkan invoice "' + id + '" (' + label + ')?\n\nSemua jejak invoice ini dihapus sekaligus:\n- Semua baris detail di Penjualan_App\n- Baris agregat di Penjualan_INV\n- Movement Keluar mirror-nya (stok barang kembali)\n- Kas Masuk otomatis (kalau ada)\n\nJurnal Buku Besar ikut bersih otomatis. Kalau invoice sudah menerima pembayaran lewat Kas Masuk, pembatalan DITOLAK — selesaikan dulu pembayarannya. Lanjutkan?',
 data: { no_invoice: id }, action: 'batalkanPenjualan', alertId: 'penjualanAlert',
-reload: () => loadRecentEntries('Penjualan_INV', 'penjualanRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_invoice',label:'No Invoice'},{field:'customer',label:'Customer'},{field:'total_tagihan',label:'Total',format:'number'},{field:'status_bayar',label:'Status'}], null, null, {fn:'penjualan', idField:'no_invoice', labelField:'customer'})
+reload: () => loadRecentEntries('Penjualan_INV', 'penjualanRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_invoice',label:'No Invoice'},{field:'customer',label:'Customer'},{field:'total_tagihan',label:'Total',format:'number'},{field:'status_bayar',label:'Status'}], null, null, {fn:'penjualan', idField:'no_invoice', labelField:'customer', qrJenis:'BATCH-INVOICE'})
 },
 pembelian: {
 teks: 'Batalkan dokumen pembelian "' + id + '" (' + label + ')?\n\nSemua jejak dokumen ini dihapus sekaligus:\n- Semua baris di Pembelian_App\n- Movement Masuk mirror-nya (stok barang berkurang kembali)\n\nJurnal Buku Besar ikut bersih otomatis. Aturan pembatalan: SAH dibatalkan selama pembatalan tidak membuat stok minus BARU — DITOLAK hanya kalau barang dokumen ini benar-benar sudah terpakai setelah tanggal dokumen (atau hutangnya sudah dibayar). Stok yang memang sudah minus sebelum dokumen ini tidak menghalangi. Baris biaya (Gas/Galon/dll) dalam dokumen yang sama tidak menghalangi. Lanjutkan?',
 data: { no_dokumen: id }, action: 'batalkanPembelian', alertId: 'pembelianAlert',
-reload: () => loadRecentEntries('Pembelian_App', 'pembelianRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'nama_supplier',label:'Supplier'},{field:'nama_barang',label:'Barang'},{field:'total',label:'Total',format:'number'}], 'kode_transaksi', 'Sample', {fn:'pembelian', idField:'no_dokumen', labelField:'nama_supplier'})
+reload: () => loadRecentEntries('Pembelian_App', 'pembelianRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'nama_supplier',label:'Supplier'},{field:'nama_barang',label:'Barang'},{field:'total',label:'Total',format:'number'}], 'kode_transaksi', 'Sample', {fn:'pembelian', idField:'no_dokumen', labelField:'nama_supplier', qrJenis:'LOT'})
 },
 kasmasuk: {
 teks: 'Batalkan baris kas masuk "' + id + '" (' + label + ')?\n\nBaris Kas_Masuk ini akan dihapus. Piutang terkait otomatis kembali terbuka.\n\nCatatan: kas OTOMATIS dari penjualan tidak bisa dibatalkan di sini — batalkan lewat invoice-nya di tab Penjualan. Lanjutkan?',
@@ -743,6 +743,12 @@ const r = qrRegistryCache[parseInt(c.dataset.idx, 10)];
 if (r) terpilih.push(r);
 });
 if (!terpilih.length) { showAlert('danger', 'Belum ada label yang dipilih — centang dulu barisnya.', 'labelQrAlert'); return; }
+printLabelsQR_(terpilih);
+}
+// [F-QR4] Pembangun + pencetak label QR bersama — dipakai tab Label QR,
+// tombol QR di daftar Penjualan/Pembelian, dan tombol print pasca-submit.
+function printLabelsQR_(terpilih) {
+if (!terpilih || !terpilih.length) return;
 const escT = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const labelsHtml = terpilih.map(r => {
 const kode = (r.kode || '').toString();
@@ -770,6 +776,59 @@ const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label QR C
 '</style></head><body><button class="print-btn" onclick="window.print()">Cetak / Simpan sebagai PDF</button><div class="batch-section">' + labelsHtml + '</div></body></html>';
 const win = window.open('', '_blank');
 if (win) { win.document.write(html); win.document.close(); }
+}
+
+// [F-QR4] Tombol QR per baris di daftar entri terakhir.
+// Pembelian: label LOT dari kode_lot baris itu. Penjualan: label BATCH
+// per invoice — diambil dari backend (getQrBatchInvoice).
+async function cetakQRRecent_(containerId, idx) {
+const r = ((loadRecentEntries._rows || {})[containerId] || [])[idx];
+if (!r) return;
+if (containerId === 'assemblyRecentTable') {
+const batch = (r.batch_no || '').toString().trim();
+if (!batch) { showAlert('info', 'Baris assembly ini tidak punya batch.', 'assemblyAlert'); return; }
+printLabelsQR_([{ jenis: 'BATCH', kode: batch, tanggal: r.tanggal || '', id_produk: (r.sku || '').toString(),
+nama_produk: (r.nama_barang || '').toString(), qty: parseFloat(r.jumlah_produksi) || 0, referensi: batch }]);
+return;
+}
+if (containerId === 'pembelianRecentTable') {
+const lot = (r.kode_lot || '').toString().trim();
+if (!lot) { showAlert('info', 'Baris ini tidak punya kode lot — label QR hanya untuk pembelian persediaan ber-lot.', 'pembelianAlert'); return; }
+printLabelsQR_([{ jenis: 'LOT', kode: lot, tanggal: r.tanggal || '', id_produk: (r.id_produk || '').toString(),
+nama_produk: (r.nama_barang || '').toString(), qty: parseFloat(r.jumlah) || 0,
+supplier: (r.nama_supplier || '').toString(), referensi: (r.no_dokumen || '').toString() }]);
+return;
+}
+if (containerId === 'penjualanRecentTable') {
+const inv = (r.no_invoice || '').toString().trim();
+if (!inv) return;
+const res = await callGAS('getQrBatchInvoice', { no_invoice: inv }, 60000, { silent: true });
+if (!res || !res.success || !res.data || !res.data.length) {
+showAlert('info', 'Invoice ' + inv + ' tidak memakai batch — tidak ada label QR.', 'penjualanAlert'); return;
+}
+printLabelsQR_(res.data);
+}
+}
+
+// [F-QR4] Tombol "Print Label QR" yang muncul tepat setelah submit
+// Penjualan/Pembelian berhasil — data label diambil dari form yang baru
+// disimpan, jadi tidak perlu muat ulang apa pun.
+let qrSiapCetak_ = [];
+function tampilkanTombolQR_(rows, alertId) {
+qrSiapCetak_ = rows;
+const alertEl = document.getElementById(alertId);
+if (!alertEl) return;
+let btn = document.getElementById(alertId + 'QRBtn');
+if (!btn) {
+btn = document.createElement('button');
+btn.id = alertId + 'QRBtn';
+btn.className = 'btn btn-secondary btn-sm';
+btn.style.margin = '6px 0';
+btn.onclick = () => printLabelsQR_(qrSiapCetak_);
+alertEl.parentNode.insertBefore(btn, alertEl.nextSibling);
+}
+btn.textContent = '🖨 Print Label QR (' + rows.length + ') — tempel di kontainer';
+btn.style.display = '';
 }
 // ============================================================
 // TAB AUDIT [F-AUDIT16b]
@@ -861,9 +920,9 @@ if (btn) btn.classList.add('active');
 setDefaultDates();
 if (tabName === 'preview') updatePreviewStats();
 if (tabName === 'labelqr') loadQRRegistry(false);
-if (tabName === 'pembelian') { clearPembelianForm(); loadRecentEntries('Pembelian_App', 'pembelianRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'nama_supplier',label:'Supplier'},{field:'nama_barang',label:'Barang'},{field:'total',label:'Total',format:'number'}], 'kode_transaksi', 'Sample', {fn:'pembelian', idField:'no_dokumen', labelField:'nama_supplier'}); }
-if (tabName === 'penjualan') { clearPenjualanForm(); autoFillNextDoc('penInvoice', 'Penjualan_App', 'no_invoice'); loadStockCacheForPenjualan(); loadRecentEntries('Penjualan_INV', 'penjualanRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_invoice',label:'No Invoice'},{field:'customer',label:'Customer'},{field:'total_tagihan',label:'Total',format:'number'},{field:'status_bayar',label:'Status'}], null, null, {fn:'penjualan', idField:'no_invoice', labelField:'customer'}); }
-if (tabName === 'assembly') { loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang'}); }
+if (tabName === 'pembelian') { clearPembelianForm(); loadRecentEntries('Pembelian_App', 'pembelianRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'nama_supplier',label:'Supplier'},{field:'nama_barang',label:'Barang'},{field:'total',label:'Total',format:'number'}], 'kode_transaksi', 'Sample', {fn:'pembelian', idField:'no_dokumen', labelField:'nama_supplier', qrJenis:'LOT'}); }
+if (tabName === 'penjualan') { clearPenjualanForm(); autoFillNextDoc('penInvoice', 'Penjualan_App', 'no_invoice'); loadStockCacheForPenjualan(); loadRecentEntries('Penjualan_INV', 'penjualanRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_invoice',label:'No Invoice'},{field:'customer',label:'Customer'},{field:'total_tagihan',label:'Total',format:'number'},{field:'status_bayar',label:'Status'}], null, null, {fn:'penjualan', idField:'no_invoice', labelField:'customer', qrJenis:'BATCH-INVOICE'}); }
+if (tabName === 'assembly') { loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang', qrJenis:'BATCH'}); }
 if (tabName === 'opname') { loadOpnameRecent(); }
 if (tabName === 'kas-masuk') { loadRecentEntries('Kas_Masuk', 'kasMasukRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'lawan_transaksi',label:'Lawan'},{field:'kas_masuk',label:'Jumlah',format:'number'},{field:'cash_account',label:'Akun'}], null, null, {fn:'kasmasuk', idField:'id_kas', labelField:'no_dokumen'}); }
 // [F6-42] Opname: siapkan peta stok sekali saat tab pertama dibuka.
@@ -1190,7 +1249,9 @@ const lanjutSubmit = await cekKonfirmasiAssembly(data);
 if (!lanjutSubmit) return;
 const result = await callGAS('submitAssembly', data);
 if (result.success) { showAlert('success', 'Assembly berhasil! ID: ' + result.id_assembly, 'assemblyAlert');
-bustStockLokal_(); clearAssemblyForm(); loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang'}); }
+// [F-QR5] tombol print label BATCH langsung setelah produksi — tempel ke kontainer hasil roasting
+tampilkanTombolQR_([{ jenis:'BATCH', kode:(data.batch_no || '').toString().trim(), tanggal:data.tanggal, id_produk:(data.sku || '').toString(), nama_produk:data.nama_barang, qty:data.jumlah_produksi, referensi:(data.batch_no || '').toString().trim() }], 'assemblyAlert');
+bustStockLokal_(); clearAssemblyForm(); loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang', qrJenis:'BATCH'}); }
 else showAlert('danger', 'Gagal: ' + result.message, 'assemblyAlert');
 }
 function clearAssemblyForm() {
@@ -1311,7 +1372,10 @@ status_bayar: document.getElementById('pemStatusBayar').value, details: details
 // backend sudah dipangkas jauh lebih cepat, ini jaga-jaga koneksi lambat.
 const result = await callGAS('submitPembelian', data, 120000);
 if (result.success) { showAlert('success', 'Pembelian berhasil! ID: ' + result.id_pembelian, 'pembelianAlert');
-bustStockLokal_(); clearPembelianForm(); loadRecentEntries('Pembelian_App', 'pembelianRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'nama_supplier',label:'Supplier'},{field:'nama_barang',label:'Barang'},{field:'total',label:'Total',format:'number'}], 'kode_transaksi', 'Sample', {fn:'pembelian', idField:'no_dokumen', labelField:'nama_supplier'}); }
+// [F-QR4] tombol print label LOT langsung setelah submit — tempel ke kontainer bahan
+const lotsBaru = details.filter(d => (d.kode_lot || '').toString().trim()).map(d => ({ jenis:'LOT', kode:d.kode_lot.toString().trim(), tanggal:data.tanggal, id_produk:d.id_produk || '', nama_produk:d.nama_barang, qty:d.jumlah, supplier:data.nama_supplier, referensi:data.no_dokumen }));
+if (lotsBaru.length) tampilkanTombolQR_(lotsBaru, 'pembelianAlert');
+bustStockLokal_(); clearPembelianForm(); loadRecentEntries('Pembelian_App', 'pembelianRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_dokumen',label:'No Dokumen'},{field:'nama_supplier',label:'Supplier'},{field:'nama_barang',label:'Barang'},{field:'total',label:'Total',format:'number'}], 'kode_transaksi', 'Sample', {fn:'pembelian', idField:'no_dokumen', labelField:'nama_supplier', qrJenis:'LOT'}); }
 else showAlert('danger', 'Gagal: ' + result.message, 'pembelianAlert');
 }
 function clearPembelianForm() {
@@ -1750,11 +1814,14 @@ showAlert('success', msg, 'penjualanAlert');
 if (result.existing_rows_warning) {
 alert(result.existing_rows_warning);
 }
+// [F-QR4] tombol print label BATCH langsung setelah submit — tempel ke kontainer
+const batchTerjual = details.filter(d => (d.batch_no || '').toString().trim()).map(d => ({ jenis:'BATCH', kode:d.batch_no.toString().trim(), tanggal:data.tanggal, id_produk:d.id_produk || '', nama_produk:d.nama_barang, qty:d.jumlah, referensi:data.no_invoice }));
+if (batchTerjual.length) tampilkanTombolQR_(batchTerjual, 'penjualanAlert');
 lastSubmittedSaleData = data;
 document.getElementById('btnPrintInvoice').style.display = '';
 printInvoice(data);
 clearPenjualanForm();
-loadRecentEntries('Penjualan_INV', 'penjualanRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_invoice',label:'No Invoice'},{field:'customer',label:'Customer'},{field:'total_tagihan',label:'Total',format:'number'},{field:'status_bayar',label:'Status'}], null, null, {fn:'penjualan', idField:'no_invoice', labelField:'customer'});
+loadRecentEntries('Penjualan_INV', 'penjualanRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'no_invoice',label:'No Invoice'},{field:'customer',label:'Customer'},{field:'total_tagihan',label:'Total',format:'number'},{field:'status_bayar',label:'Status'}], null, null, {fn:'penjualan', idField:'no_invoice', labelField:'customer', qrJenis:'BATCH-INVOICE'});
 } else {
 showAlert('danger', 'Gagal: ' + result.message, 'penjualanAlert');
 }
@@ -2620,6 +2687,7 @@ async function loadRecentEntries(table, containerId, columns, excludeField, excl
 // untuk memuat ulang dengan kata kunci (kolom & tombol Batalkan identik).
 loadRecentEntries._cfg = loadRecentEntries._cfg || {};
 loadRecentEntries._cfg[containerId] = [table, containerId, columns, excludeField, excludeValue, cancelCfg];
+loadRecentEntries._rows = loadRecentEntries._rows || {}; // [F-QR4] baris mentah untuk tombol QR
 const body = document.getElementById(containerId + 'Body');
 if (!body) return;
 const nCols = columns.length + (cancelCfg ? 1 : 0);
@@ -2632,7 +2700,8 @@ if (!result.success || !result.data || result.data.length === 0) {
 body.innerHTML = `<tr><td colspan="${nCols}" style="text-align:center;color:var(--gray);">Belum ada data</td></tr>`;
 return;
 }
-body.innerHTML = result.data.map(r => {
+loadRecentEntries._rows[containerId] = result.data;
+body.innerHTML = result.data.map((r, ri) => {
 let rowHtml = '<tr>' + columns.map(c => {
 let v = r[c.field];
 if (c.format === 'number') v = formatNumber(parseFloat(v) || 0);
@@ -2644,7 +2713,7 @@ return `<td style="${align}">${v}</td>`;
 if (cancelCfg) {
 const cid = (r[cancelCfg.idField] || '').toString();
 const lbl = (r[cancelCfg.labelField] || cid).toString().replace(/'/g, '');
-rowHtml += `<td style="text-align:center;"><button class="btn btn-danger btn-sm" onclick="konfirmasiBatalkan('${cancelCfg.fn}', '${cid}', '${lbl}')">Batalkan</button></td>`;
+rowHtml += `<td style="text-align:center;"><button class="btn btn-danger btn-sm" onclick="konfirmasiBatalkan('${cancelCfg.fn}', '${cid}', '${lbl}')">Batalkan</button>${cancelCfg.qrJenis ? ` <button class="btn btn-secondary btn-sm" title="Print label QR — tempel di kontainer" onclick="cetakQRRecent_('${containerId}', ${ri})">QR</button>` : ''}</td>`;
 }
 return rowHtml + '</tr>';
 }).join('');
@@ -3298,7 +3367,7 @@ document.getElementById('navtab-adminlogin').textContent = '🔓 Admin';
 onMasterDataJenisChange();
 // [fix #11] Tab Assembly aktif duluan (default), tidak lewat switchTab()
 // saat load pertama — jadi 5 entry terakhirnya perlu dipicu manual di sini.
-loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang'});
+loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang', qrJenis:'BATCH'});
 });
 async function showAdminLoginPrompt() {
 if (sessionStorage.getItem('qfin_admin_token')) {
