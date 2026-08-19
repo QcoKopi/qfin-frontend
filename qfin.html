@@ -1,4 +1,4 @@
-<!-- QFin qfin.html — v2026.08.15-9 [F-PANDUAN: tab baru "❓ Panduan" — panduan per tab + aturan emas + Q&A, konten statis tanpa panggilan backend] [F-MDSCOPE: validasi Tambah Data Master dibatasi ke kartunya sendiri — dulu satu tab ikut memvalidasi form Produk Baru sehingga simpan kemasan fisik selalu ditolak "wajib produk dasar/ukuran"] [label jenis Kemasan -> "Kemasan Fisik (pouch)" + hint form atas diperjelas] [F-KEMASANBEBAS2: label tipe "Kemasan 250/500gr" -> "Kemasan (repack, ukuran bebas)" — ukuran sudah bebas sejak v-6, label lama menyesatkan] [F-KEMASANBEBAS: ukuran kemasan jadi kolom angka bebas (bukan dropdown 250/500) — tambah kemasan ukuran apa pun (mis. 2 kg = 2000) cukup lewat form, tanpa ubah kode lagi] [F-QR7: jendela label QR pakai satu tab bernama (dipakai ulang + focus) dan popup-diblokir kini memunculkan instruksi jelas — pola "awalnya bisa lalu tidak" = popup dicekal browser; pesan QR penjualan dipisah: gagal panggil backend (Code.gs/Sales.gs belum terpasang) vs invoice memang tidak ber-batch] [F-QR6: label LOT pembelian polos tanpa QR & tanpa tautan qco.id — cukup info Lot/Tanggal/Produk/Berat/Supplier; QR tetap untuk label BATCH] [F-LISTDBG: daftar entri terakhir kini menampilkan PESAN ERROR asli dari server (bukan diam "Belum ada data"/stuck Memuat) supaya penyebab gagal muat langsung kelihatan] [F-QR5: label QR BATCH untuk Assembly — tombol "Print Label QR" langsung muncul setelah submit produksi berhasil + tombol QR per baris di daftar Assembly terakhir (reprint kapan saja); format label sama dengan tab Label QR] [F-QR4: label QR bisa dicetak dari Penjualan & Pembelian — tombol QR per baris di daftar entri terakhir (LOT dari kode_lot pembelian, BATCH per invoice lewat getQrBatchInvoice) + tombol Print Label QR langsung muncul setelah submit berhasil; pembangun label diekstrak ke printLabelsQR_ bersama] [F-AUDITMINUS-UI: tabel detail Audit Stok Minus tampil di kartu (status berwarna per produk), tidak cuma ringkasan] [F-CACHEBATAL: hppCache (batch & sisa stok di form penjualan) ikut dikosongkan saat bustStockLokal_ dan setelah pembatalan berhasil — entry ulang setelah batal tidak lagi ditolak validasi batch basi] [F-AUDITCLEAN: tombol perbaikan satu-kali di tab Audit (Perbaiki Referensi Lama, Bersihkan Movement Sewa, Koreksi Batch INV1441/1446, Backfill Batch Lama, Backfill QR Registry) dihapus dari frontend — fungsi tetap ada di backend, jalankan lewat editor GAS bila perlu] [F-AUDITMINUS: kartu Audit Stok Minus (Kronologis) di tab Audit — tombol + ringkasan chip merah/kuning/abu + jalankanAuditMinus()] [F-BATAL5: teks konfirmasi pembatalan pembelian diperbarui mengikuti aturan baru — DITOLAK hanya kalau membuat minus BARU (barang dokumen terpakai setelah tanggal dokumen); minus warisan tidak menghalangi] [F-BATAL4: teks konfirmasi pembatalan pembelian menuliskan aturan stok ≥ jumlah dokumen + baris biaya tidak menghalangi] [F-QR2: tab Label QR — cetak label QR container dari QR_Registry (BATCH & LOT); tombol Backfill QR Registry di tab Audit] [F-CARI2: kotak pencarian juga di Assembly & Kas Masuk; tombol Batalkan di Kas Masuk (kas otomatis dari penjualan tetap harus lewat invoice)] [F-MDHAPUS: kolom Hapus di tabel Data yang Sudah Ada (Master Data) — backend menolak kalau sudah dipakai transaksi] [F-CARI1: kotak pencarian di atas tabel 5 Entry Terakhir Penjualan & Pembelian — temukan entri lama di luar 5 terbaru (maks 20 hasil), tombol Batalkan tetap termuat; debounce 400 msd] [tab Audit: tombol Backfill Batch Lama (isi batch_no kosong sesuai ledger FIFO, satu kali); aksi backfill masuk daftar aksi-tulis (tidak pernah auto-retry)] [F-BATCHWAJIB: validasi batch sebelum submit — produk ber-batch wajib batch dari daftar + qty ≤ sisa (kunci tetap di backend); daftar batch disimpan per baris saat produk dipilih] [tab Audit: tombol Koreksi Batch INV1441/1446 (satu kali)] [callGAS: retry otomatis 1x utk aksi baca (cold start GAS) + pesan error jujur — timeout tidak lagi menyalahkan URL; aksi tulis tidak pernah auto-retry (anti dobel)] [tab Audit: tombol Bersihkan Movement Sewa (hapus movement hantu produk Jasa, satu kali)] [tab Audit: tombol Perbaiki Referensi Lama (PEN<angka> → no_invoice, satu kali) + jenis LEGACY-TERSERAP-OPNAME abu-abu bukan temuan] [tab Audit: jalankan Audit Integritas Transaksi + Audit Stok Baseline dari frontend, hasil langsung tampil] [tombol Batalkan di 5 entry terakhir Penjualan & Pembelian + konfirmasi detail penghapusan] [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
+<!-- QFin qfin.html — v2026.08.19-1 [F-BATCHSPLIT: kolom Batch penjualan tidak lagi mandatory — kosong = FIFO otomatis; qty melebihi sisa batch terpilih otomatis melebarkan tag "lama,baru" mengikuti urutan FIFO + rincian split di pesan sukses; qty melebihi total semua batch tetap ditolak; daftar batch & saldo stok di baris penjualan ikut segar setelah submit Assembly (stockCache memori ikut dibuang di bustStockLokal_) — batch baru muncul tanpa refresh halaman] [F-PANDUAN: tab baru "❓ Panduan" — panduan per tab + aturan emas + Q&A, konten statis tanpa panggilan backend] [F-MDSCOPE: validasi Tambah Data Master dibatasi ke kartunya sendiri — dulu satu tab ikut memvalidasi form Produk Baru sehingga simpan kemasan fisik selalu ditolak "wajib produk dasar/ukuran"] [label jenis Kemasan -> "Kemasan Fisik (pouch)" + hint form atas diperjelas] [F-KEMASANBEBAS2: label tipe "Kemasan 250/500gr" -> "Kemasan (repack, ukuran bebas)" — ukuran sudah bebas sejak v-6, label lama menyesatkan] [F-KEMASANBEBAS: ukuran kemasan jadi kolom angka bebas (bukan dropdown 250/500) — tambah kemasan ukuran apa pun (mis. 2 kg = 2000) cukup lewat form, tanpa ubah kode lagi] [F-QR7: jendela label QR pakai satu tab bernama (dipakai ulang + focus) dan popup-diblokir kini memunculkan instruksi jelas — pola "awalnya bisa lalu tidak" = popup dicekal browser; pesan QR penjualan dipisah: gagal panggil backend (Code.gs/Sales.gs belum terpasang) vs invoice memang tidak ber-batch] [F-QR6: label LOT pembelian polos tanpa QR & tanpa tautan qco.id — cukup info Lot/Tanggal/Produk/Berat/Supplier; QR tetap untuk label BATCH] [F-LISTDBG: daftar entri terakhir kini menampilkan PESAN ERROR asli dari server (bukan diam "Belum ada data"/stuck Memuat) supaya penyebab gagal muat langsung kelihatan] [F-QR5: label QR BATCH untuk Assembly — tombol "Print Label QR" langsung muncul setelah submit produksi berhasil + tombol QR per baris di daftar Assembly terakhir (reprint kapan saja); format label sama dengan tab Label QR] [F-QR4: label QR bisa dicetak dari Penjualan & Pembelian — tombol QR per baris di daftar entri terakhir (LOT dari kode_lot pembelian, BATCH per invoice lewat getQrBatchInvoice) + tombol Print Label QR langsung muncul setelah submit berhasil; pembangun label diekstrak ke printLabelsQR_ bersama] [F-AUDITMINUS-UI: tabel detail Audit Stok Minus tampil di kartu (status berwarna per produk), tidak cuma ringkasan] [F-CACHEBATAL: hppCache (batch & sisa stok di form penjualan) ikut dikosongkan saat bustStockLokal_ dan setelah pembatalan berhasil — entry ulang setelah batal tidak lagi ditolak validasi batch basi] [F-AUDITCLEAN: tombol perbaikan satu-kali di tab Audit (Perbaiki Referensi Lama, Bersihkan Movement Sewa, Koreksi Batch INV1441/1446, Backfill Batch Lama, Backfill QR Registry) dihapus dari frontend — fungsi tetap ada di backend, jalankan lewat editor GAS bila perlu] [F-AUDITMINUS: kartu Audit Stok Minus (Kronologis) di tab Audit — tombol + ringkasan chip merah/kuning/abu + jalankanAuditMinus()] [F-BATAL5: teks konfirmasi pembatalan pembelian diperbarui mengikuti aturan baru — DITOLAK hanya kalau membuat minus BARU (barang dokumen terpakai setelah tanggal dokumen); minus warisan tidak menghalangi] [F-BATAL4: teks konfirmasi pembatalan pembelian menuliskan aturan stok ≥ jumlah dokumen + baris biaya tidak menghalangi] [F-QR2: tab Label QR — cetak label QR container dari QR_Registry (BATCH & LOT); tombol Backfill QR Registry di tab Audit] [F-CARI2: kotak pencarian juga di Assembly & Kas Masuk; tombol Batalkan di Kas Masuk (kas otomatis dari penjualan tetap harus lewat invoice)] [F-MDHAPUS: kolom Hapus di tabel Data yang Sudah Ada (Master Data) — backend menolak kalau sudah dipakai transaksi] [F-CARI1: kotak pencarian di atas tabel 5 Entry Terakhir Penjualan & Pembelian — temukan entri lama di luar 5 terbaru (maks 20 hasil), tombol Batalkan tetap termuat; debounce 400 msd] [tab Audit: tombol Backfill Batch Lama (isi batch_no kosong sesuai ledger FIFO, satu kali); aksi backfill masuk daftar aksi-tulis (tidak pernah auto-retry)] [F-BATCHWAJIB: validasi batch sebelum submit — produk ber-batch wajib batch dari daftar + qty ≤ sisa (kunci tetap di backend); daftar batch disimpan per baris saat produk dipilih] [tab Audit: tombol Koreksi Batch INV1441/1446 (satu kali)] [callGAS: retry otomatis 1x utk aksi baca (cold start GAS) + pesan error jujur — timeout tidak lagi menyalahkan URL; aksi tulis tidak pernah auto-retry (anti dobel)] [tab Audit: tombol Bersihkan Movement Sewa (hapus movement hantu produk Jasa, satu kali)] [tab Audit: tombol Perbaiki Referensi Lama (PEN<angka> → no_invoice, satu kali) + jenis LEGACY-TERSERAP-OPNAME abu-abu bukan temuan] [tab Audit: jalankan Audit Integritas Transaksi + Audit Stok Baseline dari frontend, hasil langsung tampil] [tombol Batalkan di 5 entry terakhir Penjualan & Pembelian + konfirmasi detail penghapusan] [cache stok lokal 5 mnt untuk tab Stock/Opname/Penjualan + timeout 120 dtk] [kartu opname masuk tab opname + 20 baris & pencarian; overlay loading hanya untuk aksi submit/laporan; load awal paralel] -->
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
 :root {
 --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22;
@@ -353,6 +353,7 @@ function bustStockLokal_() {
 localStorage.removeItem(CACHE_KEY + 'allstock_lokal');
 localStorage.removeItem(CACHE_KEY + 'breakdown_lokal');
 hppCache = {}; // [F-CACHEBATAL] cache batch/HPP/sisa stok di memori ikut dibuang
+stockCache = null; // [F-BATCHSPLIT] saldo di memori ikut dibuang — tanpa ini validator qty masih menjepit ke saldo lama setelah assembly baru
 }
 async function loadMasterData() {
 const tables = ['Master_Produk', 'Master_Customer', 'Master_Supplier', 'Master_Salesman', 'Master_COA', 'Master_CashAccount', 'Master_Kemasan'];
@@ -1330,7 +1331,14 @@ const result = await callGAS('submitAssembly', data);
 if (result.success) { showAlert('success', 'Assembly berhasil! ID: ' + result.id_assembly, 'assemblyAlert');
 // [F-QR5] tombol print label BATCH langsung setelah produksi — tempel ke kontainer hasil roasting
 tampilkanTombolQR_([{ jenis:'BATCH', kode:(data.batch_no || '').toString().trim(), tanggal:data.tanggal, id_produk:(data.sku || '').toString(), nama_produk:data.nama_barang, qty:data.jumlah_produksi, referensi:(data.batch_no || '').toString().trim() }], 'assemblyAlert');
-bustStockLokal_(); clearAssemblyForm(); loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang', qrJenis:'BATCH'}); }
+bustStockLokal_();
+// [F-BATCHSPLIT] batch baru langsung muncul di baris penjualan yang sudah
+// terisi produk yang sama — tidak perlu refresh halaman / pilih ulang produk
+penjualanDetails.forEach(pid => {
+const b = document.getElementById(`pen-barang-${pid}`);
+if (b && b.dataset.value && b.dataset.value === (data.sku || '').toString()) calculatePenjualanHPP(pid);
+});
+clearAssemblyForm(); loadRecentEntries('Assembly_Entry', 'assemblyRecentTable', [{field:'tanggal',label:'Tanggal',format:'date'},{field:'batch_no',label:'Batch'},{field:'nama_barang',label:'Produk'},{field:'jumlah_produksi',label:'Jumlah',format:'number'},{field:'hpp',label:'HPP',format:'number'}], null, null, {fn:'assembly', idField:'batch_no', labelField:'nama_barang', qrJenis:'BATCH'}); }
 else showAlert('danger', 'Gagal: ' + result.message, 'assemblyAlert');
 }
 function clearAssemblyForm() {
@@ -1641,7 +1649,7 @@ function addPenjualanDetail() {
 const id = penjualanDetails.length;
 const div = document.createElement('div'); div.className = 'detail-row'; div.id = `pen-detail-${id}`;
 div.innerHTML = `
-<div class="detail-row-header"><span><strong>Barang #${id + 1}</strong></span><button class="btn-remove" onclick="removePenjualanDetail(${id})">Hapus</button></div><div class="alert alert-danger" id="pen-nostock-${id}" style="display:none;"></div><div class="form-grid"><div class="form-group"><label class="mandatory-label">Nama Barang</label><div class="searchable-dropdown"><input type="text" id="pen-barang-${id}" placeholder="Cari barang..." oninput="onDropdownInput('pen-barang-${id}', 'products')" onfocus="showDropdown('pen-barang-${id}')"><div class="dropdown-list" id="pen-barang-${id}-list"></div></div></div><div class="form-group"><label class="mandatory-label">Jumlah</label><input type="number" id="pen-qty-${id}" step="0.01" placeholder="0" onchange="validateQtyAgainstStock(${id}); calculatePenjualanItemTotal(${id}); onPenjualanQtyChange(${id})"></div><div class="form-group"><label class="mandatory-label">Harga Satuan</label><input type="number" id="pen-price-${id}" step="1000" placeholder="0" onchange="calculatePenjualanItemTotal(${id})"></div><div class="form-group"><label>Total</label><input type="number" id="pen-total-${id}" readonly placeholder="0"></div><div class="form-group"><label>Diskon</label><input type="number" id="pen-diskon-${id}" step="1000" value="0" onchange="calculatePenjualanItemTotal(${id})"></div><div class="form-group"><label>HPP (Auto)</label><input type="number" id="pen-hpp-${id}" readonly placeholder="0"></div><div class="form-group"><label class="mandatory-label">Kemasan</label><div class="searchable-dropdown"><input type="text" id="pen-kemasan-${id}" placeholder="Pilih kemasan..." oninput="filterKemasanDropdown(${id})" onfocus="filterKemasanDropdown(${id})"><div class="dropdown-list" id="pen-kemasan-${id}-list"></div></div></div><div class="form-group"><label class="mandatory-label">Jumlah Kemasan</label><input type="number" id="pen-jumlah-kemasan-${id}" step="1" placeholder="0"></div><div class="form-group"><label class="mandatory-label">Batch No</label><input type="text" id="pen-batch-${id}" placeholder="Batch No" list="pen-batch-list-${id}"><datalist id="pen-batch-list-${id}"></datalist><small id="pen-stock-${id}" style="color:var(--gray);font-size:11px;"></small></div></div>`;
+<div class="detail-row-header"><span><strong>Barang #${id + 1}</strong></span><button class="btn-remove" onclick="removePenjualanDetail(${id})">Hapus</button></div><div class="alert alert-danger" id="pen-nostock-${id}" style="display:none;"></div><div class="form-grid"><div class="form-group"><label class="mandatory-label">Nama Barang</label><div class="searchable-dropdown"><input type="text" id="pen-barang-${id}" placeholder="Cari barang..." oninput="onDropdownInput('pen-barang-${id}', 'products')" onfocus="showDropdown('pen-barang-${id}')"><div class="dropdown-list" id="pen-barang-${id}-list"></div></div></div><div class="form-group"><label class="mandatory-label">Jumlah</label><input type="number" id="pen-qty-${id}" step="0.01" placeholder="0" onchange="validateQtyAgainstStock(${id}); calculatePenjualanItemTotal(${id}); onPenjualanQtyChange(${id})"></div><div class="form-group"><label class="mandatory-label">Harga Satuan</label><input type="number" id="pen-price-${id}" step="1000" placeholder="0" onchange="calculatePenjualanItemTotal(${id})"></div><div class="form-group"><label>Total</label><input type="number" id="pen-total-${id}" readonly placeholder="0"></div><div class="form-group"><label>Diskon</label><input type="number" id="pen-diskon-${id}" step="1000" value="0" onchange="calculatePenjualanItemTotal(${id})"></div><div class="form-group"><label>HPP (Auto)</label><input type="number" id="pen-hpp-${id}" readonly placeholder="0"></div><div class="form-group"><label class="mandatory-label">Kemasan</label><div class="searchable-dropdown"><input type="text" id="pen-kemasan-${id}" placeholder="Pilih kemasan..." oninput="filterKemasanDropdown(${id})" onfocus="filterKemasanDropdown(${id})"><div class="dropdown-list" id="pen-kemasan-${id}-list"></div></div></div><div class="form-group"><label class="mandatory-label">Jumlah Kemasan</label><input type="number" id="pen-jumlah-kemasan-${id}" step="1" placeholder="0"></div><div class="form-group"><label>Batch No (opsional — kosong = FIFO otomatis)</label><input type="text" id="pen-batch-${id}" placeholder="Batch No" list="pen-batch-list-${id}"><datalist id="pen-batch-list-${id}"></datalist><small id="pen-stock-${id}" style="color:var(--gray);font-size:11px;"></small></div></div>`;
 document.getElementById('penjualanDetails').appendChild(div);
 penjualanDetails.push(id);
 // [F6-44] Baris baru yang ditambah saat mode Sewa langsung mengikuti
@@ -1820,21 +1828,21 @@ if (!validateMandatory('tab-penjualan', 'penjualanAlert')) return;
 if (penjualanDetails.length === 0) {
 showAlert('danger', 'Tambahkan minimal 1 barang', 'penjualanAlert'); return;
 }
-const details = penjualanDetails.map(id => ({
-nama_barang: document.getElementById(`pen-barang-${id}`)?.value || '',
-id_produk: document.getElementById(`pen-barang-${id}`)?.dataset.value || '',
-jumlah: parseFloat(document.getElementById(`pen-qty-${id}`)?.value) || 0,
-harga_satuan: parseFloat(document.getElementById(`pen-price-${id}`)?.value) || 0,
-total: parseFloat(document.getElementById(`pen-total-${id}`)?.value) || 0,
-diskon: parseFloat(document.getElementById(`pen-diskon-${id}`)?.value) || 0,
-kemasan: document.getElementById(`pen-kemasan-${id}`)?.value || '',
-jumlah_kemasan: parseFloat(document.getElementById(`pen-jumlah-kemasan-${id}`)?.value) || 0,
-batch_no: document.getElementById(`pen-batch-${id}`)?.value || ''
-})).filter(d => d.nama_barang);
-// [F-BATCHWAJIB] Validasi batch di form sebelum kirim (kunci keras tetap
-// di backend): produk ber-batch wajib pakai batch dari daftar & total qty
-// per batch ≤ sisa; produk tanpa batch wajib kosong. Sewa dilewati.
+// [F-BATCHSPLIT] Validasi & AUTO-SPLIT batch di form sebelum kirim (kunci
+// keras tetap di backend). Aturan baru menggantikan [F-BATCHWAJIB]:
+// - Batch BOLEH kosong → ledger memakan lapisan FIFO otomatis (terlama
+//   dulu). Kolom tidak lagi mandatory; auto-isi batch terlama tetap ada
+//   sebagai saran.
+// - qty melebihi sisa batch yang terpilih → tag otomatis DILEBARKAN
+//   mengikuti urutan FIFO mulai dari batch yang ditag ("lama,baru") —
+//   penjualan 100 kg dengan sisa batch lama 1 kg menjadi "lama,baru"
+//   (1 + 99) tanpa ditolak. Rincian split dilaporkan di pesan sukses.
+// - Tag yang tidak ada di daftar tetap DITOLAK; qty melebihi gabungan
+//   sisa semua batch tetap DITOLAK; produk tanpa batch wajib kosong.
+// - Sewa dilewati. Dijalankan SEBELUM details dibentuk supaya tag hasil
+//   split ikut terkirim.
 const kodePenSubmit = (document.getElementById('penKodeTransaksi')?.value || '').toLowerCase();
+const infoSplitBatch = [];
 if (kodePenSubmit !== 'sewa') {
 const qtyPerBatchForm = {};
 for (const id of penjualanDetails) {
@@ -1850,14 +1858,47 @@ if (daftarBatch.length === 0) {
 if (batchNo) { showAlert('danger', `${namaTampil}: produk ini tidak punya batch tersisa — kosongkan kolom batch`, 'penjualanAlert'); return; }
 continue;
 }
-if (!batchNo) { showAlert('danger', `${namaTampil}: batch wajib diisi — batch terlama: ${daftarBatch[0].batch_no}`, 'penjualanAlert'); return; }
-const cocok = daftarBatch.find(b => b.batch_no === batchNo);
-if (!cocok) { showAlert('danger', `${namaTampil}: batch "${batchNo}" tidak ada di daftar — pilih dari dropdown (terlama: ${daftarBatch[0].batch_no})`, 'penjualanAlert'); return; }
+if (!batchNo) continue; // kosong = FIFO otomatis lintas batch
+const tags = batchNo.split(',').map(t => t.trim()).filter(t => t);
+let totalSisaTag = 0; let tagNgawur = '';
+tags.forEach(t => {
+const c = daftarBatch.find(b => b.batch_no === t);
+if (!c) tagNgawur = t; else totalSisaTag += (parseFloat(c.sisa) || 0);
+});
+if (tagNgawur) { showAlert('danger', `${namaTampil}: batch "${tagNgawur}" tidak ada di daftar — pilih dari dropdown (terlama: ${daftarBatch[0].batch_no})`, 'penjualanAlert'); return; }
 const kunciAgg = (barangEl.dataset.value || namaTampil) + '|' + batchNo;
 qtyPerBatchForm[kunciAgg] = (qtyPerBatchForm[kunciAgg] || 0) + qty;
-if (qtyPerBatchForm[kunciAgg] > cocok.sisa + 1e-9) { showAlert('danger', `${namaTampil}: batch ${batchNo} sisa ${formatNumber(cocok.sisa)}, diminta total ${formatNumber(qtyPerBatchForm[kunciAgg])}`, 'penjualanAlert'); return; }
+if (qtyPerBatchForm[kunciAgg] > totalSisaTag + 1e-9) {
+// qty melebihi sisa batch terpilih → lebarkan tag mengikuti urutan FIFO
+const idxMulai = daftarBatch.findIndex(b => b.batch_no === tags[0]);
+let need = qtyPerBatchForm[kunciAgg];
+const rincian = [];
+for (let i = idxMulai; i < daftarBatch.length && need > 1e-9; i++) {
+const sisaI = parseFloat(daftarBatch[i].sisa) || 0;
+const ambil = Math.min(sisaI, need);
+if (ambil > 1e-9) { rincian.push({ no: daftarBatch[i].batch_no, ambil: ambil }); need -= ambil; }
+}
+if (need > 1e-9) { showAlert('danger', `${namaTampil}: stok batch tidak cukup — sisa total ${formatNumber(totalSisaTag)}, diminta ${formatNumber(qtyPerBatchForm[kunciAgg])}`, 'penjualanAlert'); return; }
+const tagBaru = rincian.map(r => r.no).join(',');
+batchEl.value = tagBaru;
+const kunciBaru = (barangEl.dataset.value || namaTampil) + '|' + tagBaru;
+qtyPerBatchForm[kunciBaru] = (qtyPerBatchForm[kunciBaru] || 0) + qtyPerBatchForm[kunciAgg];
+delete qtyPerBatchForm[kunciAgg];
+infoSplitBatch.push(`${namaTampil}: otomatis ambil dari ${rincian.length} batch — ` + rincian.map(r => `${r.no} ${formatNumber(r.ambil)} kg`).join(' + '));
 }
 }
+}
+const details = penjualanDetails.map(id => ({
+nama_barang: document.getElementById(`pen-barang-${id}`)?.value || '',
+id_produk: document.getElementById(`pen-barang-${id}`)?.dataset.value || '',
+jumlah: parseFloat(document.getElementById(`pen-qty-${id}`)?.value) || 0,
+harga_satuan: parseFloat(document.getElementById(`pen-price-${id}`)?.value) || 0,
+total: parseFloat(document.getElementById(`pen-total-${id}`)?.value) || 0,
+diskon: parseFloat(document.getElementById(`pen-diskon-${id}`)?.value) || 0,
+kemasan: document.getElementById(`pen-kemasan-${id}`)?.value || '',
+jumlah_kemasan: parseFloat(document.getElementById(`pen-jumlah-kemasan-${id}`)?.value) || 0,
+batch_no: document.getElementById(`pen-batch-${id}`)?.value || ''
+})).filter(d => d.nama_barang);
 const totalTagihan = details.reduce((sum, d) => sum + (d.total - d.diskon), 0);
 const totalBayar = parseFloat(document.getElementById('penTotalBayar')?.value) || 0;
 const data = {
@@ -1881,10 +1922,11 @@ const penInvInput = document.getElementById('penInvoice');
 if (penInvInput) penInvInput.value = result.no_invoice;
 }
 let msg = 'Penjualan berhasil! ID: ' + result.id_penjualan + (result.no_invoice ? ' | No Invoice: ' + result.no_invoice : '');
+const splitInfoMsg = infoSplitBatch.length ? ' | Split batch: ' + infoSplitBatch.join(' | ') : '';
 if (result.stock_warnings && result.stock_warnings.length > 0) {
-showAlert('warning', 'Tersimpan, tapi stok kurang untuk: ' + result.stock_warnings.join('; '), 'penjualanAlert');
+showAlert('warning', 'Tersimpan, tapi stok kurang untuk: ' + result.stock_warnings.join('; ') + splitInfoMsg, 'penjualanAlert');
 } else {
-showAlert('success', msg, 'penjualanAlert');
+showAlert('success', msg + splitInfoMsg, 'penjualanAlert');
 }
 // [fix] Peringatan no_invoice yang sudah pernah dipakai dipaksa muncul
 // sebagai popup (bukan cuma banner yang bisa kelewat/ketimpa alert lain)
