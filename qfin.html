@@ -1,5 +1,48 @@
-<!-- QFin qfin.html — v2026.08.22-7 [F-GLANTRE: pasangan backend Reports.gs v2026.08.22-1 — loop rebuild abadi dimatikan (1 sheet per tick, lock singkat, circuit breaker); kartu baru "Status Auto-Update Sheet Live" di tab Audit (admin) + aksi getLiveSheetStatus/resetLiveSheetCircuit; getBukuBesar sabar 180s; harga riwayat penjualan SEKALI panggil mode peta (bukan per baris)] [F-ALERTLENGKET: alert danger tidak lagi auto-hilang 8 dtk — error selalu terbaca; penjaga generasi mencegah timer lama menutup pesan baru] [F-MEMUATGAGAL: 4 tab laporan (Buku Besar, Piutang-Hutang, Rekon Piutang, Rekon Hutang) tidak lagi "Memuat..." abadi — kegagalan tertulis di dalam tabel + tautan Coba lagi] (sebelumnya v2026.08.22-6)
-<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
+<!-- QFin qfin.html — v2026.08.22-8 [REBASE: basis dialihkan ke file LIVE user (v2026.08.22-4 + GUARD TOKEN AKSES PORTAL QSystem — gerbang token sekali-pakai 60 dtk dipertahankan utuh, TIDAK disentuh); seluruh fitur v5/v6/v7 diterapkan ulang di atasnya: F-HARGARIWAYAT (harga riwayat customer+barang, mode peta 1 panggilan), F-LOADINGBOCOR (overlay naik sekali per panggilan), F-ALERTLENGKET (danger tidak auto-hilang), F-MEMUATGAGAL (4 tab laporan anti "Memuat..." abadi), F-GLANTRE (kartu Status Sheet Live di Audit + getBukuBesar 180s)] (sebelumnya v2026.08.22-4)
+<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- ============================================================
+     BARU (2026-08-22): GUARD TOKEN AKSES PORTAL -- mencegah halaman
+     ini dibuka LANGSUNG (bookmark/link lama) tanpa lewat tombol
+     "Buka Portal QFinance" di QSystem. QSystem menerbitkan token
+     sekali-pakai umur pendek (60 detik) SEBELUM membuka tab ini;
+     guard di bawah HARUS memvalidasi token itu SEBELUM konten apa
+     pun ditampilkan -- kalau tidak ada/tidak valid, langsung
+     dialihkan balik ke qsys.qcoid.com. TIDAK menyentuh logika/kode
+     apa pun di bawah ini -- murni ditambahkan di depan sebagai
+     gerbang independen. Pola SAMA PERSIS dengan yang sudah terbukti
+     jalan di Sales Portal -- backend URL SENGAJA memakai CONFIG.GAS_URL
+     milik QSystem (yang menerbitkan token), BUKAN gasUrl milik file
+     qfin.html sendiri (dua backend beda, cuma yang MENERBITKAN token
+     yang relevan untuk validasi). --><style id="portal-guard-style">html{display:none !important;}</style><script>
+(function(){
+  var PORTAL_GUARD_GAS_URL = 'https://script.google.com/macros/s/AKfycbxETc9Xv6udc7U0N9yflz7DrosN3PH1STUhF-d1qrW0ST48DKjFU4w8Kafuadm09XU/exec';
+  var QSYS_URL = 'https://qsys.qcoid.com/';
+
+  function redirectAway(){
+    window.location.replace(QSYS_URL);
+  }
+
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('t');
+
+  if (!token) {
+    redirectAway();
+  } else {
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function(){ controller.abort(); }, 8000);
+    fetch(PORTAL_GUARD_GAS_URL + '?action=validatePortalToken&token=' + encodeURIComponent(token) + '&_t=' + Date.now(), { signal: controller.signal })
+      .then(function(r){ clearTimeout(timeoutId); return r.json(); })
+      .then(function(res){
+        if (res && res.success && res.data && res.data.valid) {
+          var styleEl = document.getElementById('portal-guard-style');
+          if (styleEl) styleEl.remove();
+        } else {
+          redirectAway();
+        }
+      })
+      .catch(function(){ redirectAway(); });
+  }
+})();
+</script><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
 :root {
 --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22;
 --success: #27ae60; --danger: #e74c3c; --warning: #f39c12;
