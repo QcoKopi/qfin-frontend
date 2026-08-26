@@ -12,20 +12,51 @@
      jalan di Sales Portal -- backend URL SENGAJA memakai CONFIG.GAS_URL
      milik QSystem (yang menerbitkan token), BUKAN gasUrl milik file
      qfin.html sendiri (dua backend beda, cuma yang MENERBITKAN token
-     yang relevan untuk validasi). --><style id="portal-guard-style">html{display:none !important;}</style><script>
+     yang relevan untuk validasi). -->
+<style id="portal-guard-style">
+  body { visibility: hidden !important; }
+  #portal-guard-overlay {
+    visibility: visible !important;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2147483647;
+    display: flex; align-items: center; justify-content: center;
+    background: #f5f5f5; font-family: Arial, Helvetica, sans-serif;
+  }
+  #portal-guard-overlay div { text-align: center; color: #555; font-size: 14px; padding: 24px; }
+</style>
+<div id="portal-guard-overlay"><div id="portal-guard-message">Memverifikasi akses&hellip;</div></div>
+<script>
 (function(){
+  // FIX BUG NYATA (2026-08-26): SEBELUMNYA pakai html{display:none} --
+  // kalau validasi gagal/timeout/error APAPUN, halaman jadi BENAR-BENAR
+  // BLANK tanpa pesan apa pun (display:none pada <html> menyembunyikan
+  // SEGALANYA, termasuk pesan error yang coba ditampilkan -- child
+  // element TIDAK BISA meng-override display:none induknya). Diganti
+  // body{visibility:hidden} + overlay terpisah yang eksplisit
+  // visibility:visible (visibility, TIDAK SEPERTI display, BISA
+  // di-override oleh child) -- supaya kalau ada apa pun yang gagal,
+  // ALASANNYA kelihatan dulu sebentar sebelum dialihkan, bukan cuma
+  // "blank" tanpa penjelasan.
   var PORTAL_GUARD_GAS_URL = 'https://script.google.com/macros/s/AKfycbxETc9Xv6udc7U0N9yflz7DrosN3PH1STUhF-d1qrW0ST48DKjFU4w8Kafuadm09XU/exec';
   var QSYS_URL = 'https://qsys.qcoid.com/';
 
-  function redirectAway(){
-    window.location.replace(QSYS_URL);
+  function showThenRedirect(msg){
+    var el = document.getElementById('portal-guard-message');
+    if (el) el.textContent = msg + ' Mengalihkan ke QSystem...';
+    setTimeout(function(){ window.location.replace(QSYS_URL); }, 1800);
+  }
+
+  function reveal(){
+    var styleEl = document.getElementById('portal-guard-style');
+    if (styleEl) styleEl.remove();
+    var overlayEl = document.getElementById('portal-guard-overlay');
+    if (overlayEl) overlayEl.remove();
   }
 
   var params = new URLSearchParams(window.location.search);
   var token = params.get('t');
 
   if (!token) {
-    redirectAway();
+    showThenRedirect('Akses langsung tidak diizinkan -- harus lewat tombol Buka Portal QFinance di QSystem.');
   } else {
     var controller = new AbortController();
     var timeoutId = setTimeout(function(){ controller.abort(); }, 8000);
@@ -33,16 +64,19 @@
       .then(function(r){ clearTimeout(timeoutId); return r.json(); })
       .then(function(res){
         if (res && res.success && res.data && res.data.valid) {
-          var styleEl = document.getElementById('portal-guard-style');
-          if (styleEl) styleEl.remove();
+          reveal();
         } else {
-          redirectAway();
+          var reason = (res && res.data && res.data.reason) || (res && res.error) || 'Verifikasi tidak berhasil.';
+          showThenRedirect(reason);
         }
       })
-      .catch(function(){ redirectAway(); });
+      .catch(function(err){
+        showThenRedirect('Gagal terhubung ke server verifikasi (' + (err && err.message ? err.message : 'jaringan bermasalah') + ').');
+      });
   }
 })();
-</script><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
+</script>
+<title>QFin - Financial Management System [P2 FIXED v1]</title><style>
 :root {
 --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22;
 --success: #27ae60; --danger: #e74c3c; --warning: #f39c12;
