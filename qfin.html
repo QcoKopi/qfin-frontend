@@ -1,4 +1,4 @@
-<!-- QFin qfin.html — v2026.08.22-8 [REBASE: basis dialihkan ke file LIVE user (v2026.08.22-4 + GUARD TOKEN AKSES PORTAL QSystem — gerbang token sekali-pakai 60 dtk dipertahankan utuh, TIDAK disentuh); seluruh fitur v5/v6/v7 diterapkan ulang di atasnya: F-HARGARIWAYAT (harga riwayat customer+barang, mode peta 1 panggilan), F-LOADINGBOCOR (overlay naik sekali per panggilan), F-ALERTLENGKET (danger tidak auto-hilang), F-MEMUATGAGAL (4 tab laporan anti "Memuat..." abadi), F-GLANTRE (kartu Status Sheet Live di Audit + getBukuBesar 180s)] (sebelumnya v2026.08.22-4)
+<!-- QFin qfin.html — v2026.08.26-1 [REBASE: basis dialihkan ke file LIVE user (v2026.08.22-4 + GUARD TOKEN AKSES PORTAL QSystem — gerbang token sekali-pakai 60 dtk dipertahankan utuh, TIDAK disentuh); seluruh fitur v5/v6/v7 diterapkan ulang di atasnya: F-HARGARIWAYAT (harga riwayat customer+barang, mode peta 1 panggilan), F-LOADINGBOCOR (overlay naik sekali per panggilan), F-ALERTLENGKET (danger tidak auto-hilang), F-MEMUATGAGAL (4 tab laporan anti "Memuat..." abadi), F-GLANTRE (kartu Status Sheet Live di Audit + getBukuBesar 180s)] (sebelumnya v2026.08.22-4)
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- ============================================================
      BARU (2026-08-22): GUARD TOKEN AKSES PORTAL -- mencegah halaman
      ini dibuka LANGSUNG (bookmark/link lama) tanpa lewat tombol
@@ -12,51 +12,20 @@
      jalan di Sales Portal -- backend URL SENGAJA memakai CONFIG.GAS_URL
      milik QSystem (yang menerbitkan token), BUKAN gasUrl milik file
      qfin.html sendiri (dua backend beda, cuma yang MENERBITKAN token
-     yang relevan untuk validasi). -->
-<style id="portal-guard-style">
-  body { visibility: hidden !important; }
-  #portal-guard-overlay {
-    visibility: visible !important;
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2147483647;
-    display: flex; align-items: center; justify-content: center;
-    background: #f5f5f5; font-family: Arial, Helvetica, sans-serif;
-  }
-  #portal-guard-overlay div { text-align: center; color: #555; font-size: 14px; padding: 24px; }
-</style>
-<div id="portal-guard-overlay"><div id="portal-guard-message">Memverifikasi akses&hellip;</div></div>
-<script>
+     yang relevan untuk validasi). --><style id="portal-guard-style">html{display:none !important;}</style><script>
 (function(){
-  // FIX BUG NYATA (2026-08-26): SEBELUMNYA pakai html{display:none} --
-  // kalau validasi gagal/timeout/error APAPUN, halaman jadi BENAR-BENAR
-  // BLANK tanpa pesan apa pun (display:none pada <html> menyembunyikan
-  // SEGALANYA, termasuk pesan error yang coba ditampilkan -- child
-  // element TIDAK BISA meng-override display:none induknya). Diganti
-  // body{visibility:hidden} + overlay terpisah yang eksplisit
-  // visibility:visible (visibility, TIDAK SEPERTI display, BISA
-  // di-override oleh child) -- supaya kalau ada apa pun yang gagal,
-  // ALASANNYA kelihatan dulu sebentar sebelum dialihkan, bukan cuma
-  // "blank" tanpa penjelasan.
   var PORTAL_GUARD_GAS_URL = 'https://script.google.com/macros/s/AKfycbxETc9Xv6udc7U0N9yflz7DrosN3PH1STUhF-d1qrW0ST48DKjFU4w8Kafuadm09XU/exec';
   var QSYS_URL = 'https://qsys.qcoid.com/';
 
-  function showThenRedirect(msg){
-    var el = document.getElementById('portal-guard-message');
-    if (el) el.textContent = msg + ' Mengalihkan ke QSystem...';
-    setTimeout(function(){ window.location.replace(QSYS_URL); }, 1800);
-  }
-
-  function reveal(){
-    var styleEl = document.getElementById('portal-guard-style');
-    if (styleEl) styleEl.remove();
-    var overlayEl = document.getElementById('portal-guard-overlay');
-    if (overlayEl) overlayEl.remove();
+  function redirectAway(){
+    window.location.replace(QSYS_URL);
   }
 
   var params = new URLSearchParams(window.location.search);
   var token = params.get('t');
 
   if (!token) {
-    showThenRedirect('Akses langsung tidak diizinkan -- harus lewat tombol Buka Portal QFinance di QSystem.');
+    redirectAway();
   } else {
     var controller = new AbortController();
     var timeoutId = setTimeout(function(){ controller.abort(); }, 8000);
@@ -64,19 +33,16 @@
       .then(function(r){ clearTimeout(timeoutId); return r.json(); })
       .then(function(res){
         if (res && res.success && res.data && res.data.valid) {
-          reveal();
+          var styleEl = document.getElementById('portal-guard-style');
+          if (styleEl) styleEl.remove();
         } else {
-          var reason = (res && res.data && res.data.reason) || (res && res.error) || 'Verifikasi tidak berhasil.';
-          showThenRedirect(reason);
+          redirectAway();
         }
       })
-      .catch(function(err){
-        showThenRedirect('Gagal terhubung ke server verifikasi (' + (err && err.message ? err.message : 'jaringan bermasalah') + ').');
-      });
+      .catch(function(){ redirectAway(); });
   }
 })();
-</script>
-<title>QFin - Financial Management System [P2 FIXED v1]</title><style>
+</script><title>QFin - Financial Management System [P2 FIXED v1]</title><style>
 :root {
 --primary: #2c3e50; --secondary: #34495e; --accent: #e67e22;
 --success: #27ae60; --danger: #e74c3c; --warning: #f39c12;
@@ -1060,7 +1026,12 @@ html += '<tr><td>' + escHtml_(s.judul) + '</td><td' + warna + '>' + escHtml_(s.s
 });
 if (!(d.sheets || []).length) html += '<tr><td colspan="3" style="text-align:center;color:var(--gray);">Belum ada sheet live terdaftar — buat lewat tombol di tab laporan masing-masing.</td></tr>';
 html += '</tbody></table>';
-html += '<div style="font-size:12px;color:var(--gray);">Antrean rebuild: ' + ((d.antrean || []).length ? escHtml_(d.antrean.join(', ')) : 'kosong') + ' · Trigger 1 menit: ' + (d.trigger_aktif ? 'AKTIF' : '<b style="color:#c0392b;">TIDAK ADA</b>') + (d.sedang_rebuild ? ' · Sedang membangun: ' + escHtml_(d.sedang_rebuild) : '') + '</div>';
+const detak = (d.tick_menit_lalu === null || d.tick_menit_lalu === undefined)
+? '<b style="color:#c0392b;">BELUM PERNAH berdetak</b>'
+: (d.tick_menit_lalu > 3
+? '<b style="color:#c0392b;">' + d.tick_menit_lalu + ' mnt lalu — TRIGGER TAMPAKNYA MATI: jalankan aktifkanAutoUpdateBukuBesar sekali dari editor GAS (Extensions → Apps Script → pilih fungsi → Run)</b>'
+: d.tick_menit_lalu + ' mnt lalu');
+html += '<div style="font-size:12px;color:var(--gray);">Antrean rebuild: ' + ((d.antrean || []).length ? escHtml_(d.antrean.join(', ')) : 'kosong') + ' · Trigger 1 menit: ' + (d.trigger_aktif ? 'AKTIF' : '<b style="color:#c0392b;">TIDAK ADA</b>') + ' · Tick terakhir: ' + detak + (d.sedang_rebuild ? ' · Sedang membangun: ' + escHtml_(d.sedang_rebuild) : '') + '</div>'; // [F-GLANTRE-v2] detak jantung trigger
 el.innerHTML = html;
 }
 async function resetSirkuitSheetLive() {
