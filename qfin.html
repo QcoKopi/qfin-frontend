@@ -1,4 +1,4 @@
-<!-- QFin qfin.html — v2026.08.27-1 [F-TRIGHARIAN: tombol Perbaiki Trigger di kartu status Audit (pasangan Reports.gs v2026.08.27-1) — hapus SEMUA trigger GL lama + buat trigger tiap-1-menit baru; pesan detak mati kini mengarah ke tombol ini] [REBASE: basis dialihkan ke file LIVE user (v2026.08.22-4 + GUARD TOKEN AKSES PORTAL QSystem — gerbang token sekali-pakai 60 dtk dipertahankan utuh, TIDAK disentuh); seluruh fitur v5/v6/v7 diterapkan ulang di atasnya: F-HARGARIWAYAT (harga riwayat customer+barang, mode peta 1 panggilan), F-LOADINGBOCOR (overlay naik sekali per panggilan), F-ALERTLENGKET (danger tidak auto-hilang), F-MEMUATGAGAL (4 tab laporan anti "Memuat..." abadi), F-GLANTRE (kartu Status Sheet Live di Audit + getBukuBesar 180s)] (sebelumnya v2026.08.22-4)
+<!-- QFin qfin.html — v2026.08.27-2 [F-RIWAYATSALES+F-RIWAYATBELI: placeholder mengikuti riwayat — salesman Penjualan menampilkan "Terakhir dilayani: X" per customer (tidak menimpa isian), harga satuan Pembelian menampilkan "Terakhir beli dari supplier: Rp X" per supplier+barang dengan fallback rata-rata historis; pasangan Sales.gs/Purchasing.gs v2026.08.27-1 & Code.gs v2026.08.27-3] [F-TRIGHARIAN: tombol Perbaiki Trigger di kartu status Audit (pasangan Reports.gs v2026.08.27-1) — hapus SEMUA trigger GL lama + buat trigger tiap-1-menit baru; pesan detak mati kini mengarah ke tombol ini] [REBASE: basis dialihkan ke file LIVE user (v2026.08.22-4 + GUARD TOKEN AKSES PORTAL QSystem — gerbang token sekali-pakai 60 dtk dipertahankan utuh, TIDAK disentuh); seluruh fitur v5/v6/v7 diterapkan ulang di atasnya: F-HARGARIWAYAT (harga riwayat customer+barang, mode peta 1 panggilan), F-LOADINGBOCOR (overlay naik sekali per panggilan), F-ALERTLENGKET (danger tidak auto-hilang), F-MEMUATGAGAL (4 tab laporan anti "Memuat..." abadi), F-GLANTRE (kartu Status Sheet Live di Audit + getBukuBesar 180s)] (sebelumnya v2026.08.22-4)
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- ============================================================
      BARU (2026-08-22): GUARD TOKEN AKSES PORTAL -- mencegah halaman
      ini dibuka LANGSUNG (bookmark/link lama) tanpa lewat tombol
@@ -708,25 +708,53 @@ const supplierInput = document.getElementById('pemSupplier');
 if (supplierInput) { supplierInput.value = 'Q.Co'; supplierInput.dataset.value = 'MAS663830737'; }
 }
 }
-if (inputId === 'pemSupplier') updateAllKodeLot();
+if (inputId === 'pemSupplier') { updateAllKodeLot(); pembelianDetails.forEach(rid => refreshPlaceholderHargaBeli_(rid)); } // [F-RIWAYATBELI]
 const pemBarangMatch = inputId.match(/^pem-barang-(\d+)$/);
 if (pemBarangMatch) {
 const rowId = parseInt(pemBarangMatch[1], 10);
 updateKodeLotForRow(rowId);
-// [fix] Placeholder Harga Satuan dari rata-rata harga beli historis —
-// tetap editable, cuma bantu isi awal.
+refreshPlaceholderHargaBeli_(rowId); // [F-RIWAYATBELI] placeholder dari riwayat supplier+barang
+}
+}
+// [F-RIWAYATBELI] Placeholder harga satuan pembelian dari riwayat
+// supplier+barang (harga TERAKHIR). Cache peta per supplier — 1 panggilan
+// backend per supplier, bukan per baris barang.
+let petaRiwayatBeli_ = { supplier: '', peta: null };
+async function ambilPetaRiwayatBeli_(sup) {
+const kunci = (sup || '').trim();
+if (!kunci) return null;
+if (petaRiwayatBeli_.supplier === kunci && petaRiwayatBeli_.peta) return petaRiwayatBeli_.peta;
+try {
+const res = await callGAS('getHargaRiwayatSupplier', { supplier: kunci }, 60000, { silent: true });
+if (res && res.success && res.data && res.data.harga_per_barang) {
+petaRiwayatBeli_ = { supplier: kunci, peta: res.data.harga_per_barang };
+return petaRiwayatBeli_.peta;
+}
+} catch (e) {}
+return null;
+}
+async function refreshPlaceholderHargaBeli_(rowId) {
 const priceInput = document.getElementById(`pem-price-${rowId}`);
-if (priceInput) {
+const barangInput = document.getElementById(`pem-barang-${rowId}`);
+if (!priceInput || !barangInput || !(barangInput.value || '').trim()) return;
+const sup = ((document.getElementById('pemSupplier') || {}).value || '').trim();
+if (sup) {
+const peta = await ambilPetaRiwayatBeli_(sup);
+if (peta) {
+const h = peta[(barangInput.value || '').trim().toLowerCase()];
+if (h) { priceInput.placeholder = 'Terakhir beli dari ' + sup + ': Rp ' + formatNumber(Math.round(h)); return; }
+}
+}
+// [fix] fallback lama: rata-rata harga beli historis lintas supplier —
+// tetap editable, cuma bantu isi awal.
 priceInput.placeholder = '...';
-callGAS('getHargaRataRataPembelian', { id_produk: value, nama_barang: label }, 60000, { silent: true }).then(res => {
+callGAS('getHargaRataRataPembelian', { id_produk: barangInput.dataset.value, nama_barang: barangInput.value }, 60000, { silent: true }).then(res => {
 if (res && res.success && res.harga > 0) {
 priceInput.placeholder = 'Rata-rata: Rp ' + formatNumber(Math.round(res.harga));
 } else {
 priceInput.placeholder = '0';
 }
 });
-}
-}
 }
 document.addEventListener('click', function(e) {
 if (!e.target.closest('.searchable-dropdown')) document.querySelectorAll('.dropdown-list').forEach(l => l.classList.remove('show'));
@@ -1914,7 +1942,7 @@ return { ditemukan: false, harga: 0, jumlah_riwayat: 0 };
 async function ambilPetaHargaRiwayatCustomer_(cust) {
 try {
 const res = await callGAS('getHargaRiwayatCustomer', { customer: cust }, 60000, { silent: true });
-if (res && res.success && res.data && res.data.harga_per_barang) return res.data.harga_per_barang;
+if (res && res.success && res.data && res.data.harga_per_barang) return res.data;
 } catch (e) {}
 return null; // null = server sibuk/tidak tahu — JANGAN utak-atik harga yang sudah terisi
 }
@@ -1923,8 +1951,15 @@ const cust = ((document.getElementById('penCustomer') || {}).value || '').trim()
 if (!cust) return;
 // [F-GLANTRE] SEKALI panggil untuk semua baris (mode peta backend) — dulu
 // N baris = N panggilan getAll Penjualan_App penuh, beruntun & lambat.
-const peta = await ambilPetaHargaRiwayatCustomer_(cust);
-if (!peta) return;
+const d = await ambilPetaHargaRiwayatCustomer_(cust);
+if (!d) return;
+// [F-RIWAYATSALES] placeholder salesman mengikuti riwayat customer ini —
+// hanya petunjuk, TIDAK menimpa kalau field sudah diisi.
+const smInput = document.getElementById('penSalesman');
+if (smInput && !(smInput.value || '').trim()) {
+smInput.placeholder = d.salesman_terakhir ? 'Terakhir dilayani: ' + d.salesman_terakhir : 'Cari salesman...';
+}
+const peta = d.harga_per_barang;
 for (const rid of penjualanDetails) {
 const barangInput = document.getElementById(`pen-barang-${rid}`);
 const priceInput = document.getElementById(`pen-price-${rid}`);
