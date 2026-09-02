@@ -1,4 +1,4 @@
-<!-- QFin qfin.html — v2026.09.01-5 [F-PAGARHARGA: (1) catatan "Pagar: Rp X (terakhir … · B2B+ …)" per baris barang — ikut refresh saat customer diganti & barang dipilih; harga di bawah pagar diberi border/label merah; (2) submit tertahan server (butuh_konfirmasi_harga) → dialog konfirmasi berisi rincian pagar & sumbernya, setuju → submit ulang dengan konfirmasi_harga=true, batal → tidak ada yang tersimpan; pasangan Sales.gs v2026.09.01-1, Pricelist.gs v2026.09.01-3 & Code.gs v2026.09.01-4] (sebelumnya v2026.09.01-4) [F-HPPROAST: kartu Audit HPP Roast (Semua Produk) di tab Audit — tombol Jalankan Audit (tabel batch menyimpang: jenis MULTI-ROAST/TIDAK-KONSISTEN, roast, produksi benar, HPP tersimpan vs seharusnya) + tombol Koreksi HPP Roast dengan konfirmasi (MENULIS, backup per baris); pasangan StockLogic.gs v2026.09.01-4 & Code.gs v2026.09.01-3] (sebelumnya v2026.09.01-3) [F-RESEP105FE: dropdown form transaksi (Assembly/Pembelian/Penjualan/resep/bahan HB) menyaring produk & kemasan berstatus Nonaktif; opProduk/movProduk sengaja dikecualikan karena opname/koreksi sah untuk produk nonaktif — pasangan Master.gs v2026.09.01-2 (GB07 & RB07 nonaktif)] [F-PLBULAT: harga jual pricelist dibulatkan KE ATAS ke kelipatan Rp 10.000 (bulatKeAtas10Ribu_ — pasangan Pricelist.gs v2026.09.01-2), di tabel maupun hitung ulang edit markup] [F-PLB2B: kolom Harga B2B (-10%) & B2B+ (-15%), dibulatkan ke atas ke Rp 10.000, ikut tersimpan ke Price_List; tabel jadi 11 kolom] [F-PLCETAKFILTER: Cetak Pricelist mengikuti filter aktif (Kategori + Cari) — filter Produk Kopi berarti hanya Produk Kopi yang tercetak; cetakan menampilkan kolom B2B/B2B+ dan label filter] [F-HPPSUMBER: kolom Sumber HPP baru di tabel Pricelist (nama sumber + referensi/batch + tanggal + tanda diskala dari SKU lain bila HPP menyeberang ukuran — pasangan Pricelist.gs v2026.08.31-1 & Reports.gs v2026.08.31-1); sumber ikut tersimpan ke sheet Price_List; tabel jadi 9 kolom] [F-REFIX2: tombol Normalisasi Ref PEN Lama di kartu Audit Sinkron Stok (dengan konfirmasi — MENULIS; baris ambigu/tanpa dokumen ditampilkan untuk putusan manual); pasangan StockLogic.gs v2026.08.27-6 & Code.gs v2026.08.27-9] [F-STOKSYNC: kartu Audit Sinkron Stok di tab Audit — per produk: A (Σ sheet Stock_Movement) vs B (replay dokumen sumber) vs C (sheet Laporan Stock), selisih A−B dimerahkan + tabel baris movement non-opname penyebabnya; pasangan StockLogic.gs v2026.08.27-5 & Code.gs v2026.08.27-8] [F-HPPKONTRA: tombol "Koreksi HPP Kontradiktif" di kartu Audit HPP Pricelist (dengan konfirmasi — MENULIS koreksi, backup per baris); pasangan StockLogic.gs v2026.08.27-4 & Code.gs v2026.08.27-7] [F-HPPPRICECEK: kartu Audit HPP Pricelist di tab Audit — bandingkan HPP per kg antar-ukuran produk yang sama (selisih >15% dimerahkan), tiap baris menampilkan sumber (batch/tanggal/qty/total biaya) supaya penyebab langsung ketemu; pasangan Reports.gs v2026.08.27-6 & Code.gs v2026.08.27-6] [F-PLKATEGORI: tab Pricelist dapat dropdown Filter Kategori (otomatis terisi dari kategori hasil generate, bekerja bareng kotak Cari) + kolom Kategori di tabel; pasangan Pricelist.gs v2026.08.27-1] [F-AUDITSUSUT-v3: kartu Audit Penyusutan kini menampilkan tabel RATA-RATA SUSUT PER PRODUK (semua produk roasting, diurut susut tertinggi, selisih >10 poin dimerahkan) di samping tabel temuan; pasangan StockLogic.gs v2026.08.27-3] [F-RASIOLABA-v3: tabel kedua PER BULAN di kartu Rasio Laba — baris komponen × kolom bulan, isi % dari Revenue bulan itu (tren antar-bulan); pasangan Reports.gs v2026.08.27-4] [F-RASIOLABA-v2: Marketing DIPISAH jadi baris tersendiri — baris Biaya Operasional kini non-marketing; pasangan Reports.gs v2026.08.27-3] [F-RASIOLABA: kartu Rasio Laba di tab Audit — Revenue/HPP/Biaya Operasional/Marketing/Lain-lain/Pajak/Laba Bersih + %% dari Revenue (nett margin), kumulatif Jan 2026 s/d sekarang; daftar akun marketing ditampilkan; pasangan Reports.gs v2026.08.27-2 & Code.gs v2026.08.27-5] [F-AUDITSUSUT-v2: kartu Audit Penyusutan kini menjelaskan batch PENGEMASAN tidak dinilai (satuan beda kg vs bungkus) dan tercatat 0% impor dianggap "tidak tercatat"; pasangan StockLogic.gs v2026.08.27-2] [F-AUDITSUSUT: kartu Audit Penyusutan di tab Audit — tabel temuan (klasifikasi/batch/susut real vs tercatat/selisih), TRANSAKSI-APLIKASI dimerahkan; pasangan StockLogic.gs v2026.08.27-2 & Code.gs v2026.08.27-4] [F-RIWAYATSALES+F-RIWAYATBELI: placeholder mengikuti riwayat — salesman Penjualan menampilkan "Terakhir dilayani: X" per customer (tidak menimpa isian), harga satuan Pembelian menampilkan "Terakhir beli dari supplier: Rp X" per supplier+barang dengan fallback rata-rata historis; pasangan Sales.gs/Purchasing.gs v2026.08.27-1 & Code.gs v2026.08.27-3] [F-TRIGHARIAN: tombol Perbaiki Trigger di kartu status Audit (pasangan Reports.gs v2026.08.27-1) — hapus SEMUA trigger GL lama + buat trigger tiap-1-menit baru; pesan detak mati kini mengarah ke tombol ini] [REBASE: basis dialihkan ke file LIVE user (v2026.08.22-4 + GUARD TOKEN AKSES PORTAL QSystem — gerbang token sekali-pakai 60 dtk dipertahankan utuh, TIDAK disentuh); seluruh fitur v5/v6/v7 diterapkan ulang di atasnya: F-HARGARIWAYAT (harga riwayat customer+barang, mode peta 1 panggilan), F-LOADINGBOCOR (overlay naik sekali per panggilan), F-ALERTLENGKET (danger tidak auto-hilang), F-MEMUATGAGAL (4 tab laporan anti "Memuat..." abadi), F-GLANTRE (kartu Status Sheet Live di Audit + getBukuBesar 180s)] (sebelumnya v2026.08.22-4)
+<!-- QFin qfin.html — v2026.09.02-1 [F-SAMPLEHPP: kode transaksi Sample di Penjualan — Harga Satuan, Total & Type Pembayaran TIDAK mandatory lagi dan dinonaktifkan (section pembayaran disembunyikan; validateMandatory memang melewati field hidden/disabled); catatan pagar harga dibersihkan & tidak dipanggil untuk Sample; nilai biaya sample di GL dihitung backend dari HPP × qty — pasangan Sales.gs v2026.09.02-1] (sebelumnya v2026.09.01-6) [F-MDCEPAT: tambah/edit master (mis. produk baru) tidak lagi "lama sekali" — (1) tombol & pesan sukses langsung pulih begitu server menjawab, refresh daftar berjalan di latar belakang (dulu di-await termasuk getAllStock ledger penuh batas 120 detik); (2) peta stok kolom daftar master dipakai ulang dari memori — getAllStock hanya dipanggil lagi setelah bustStockLokal_ (transaksi yang benar-benar mengubah stok); pasangan Master.gs v2026.09.01-3 & Crud.gs v2026.09.01-1] (sebelumnya v2026.09.01-5) [F-PAGARHARGA: (1) catatan "Pagar: Rp X (terakhir … · B2B+ …)" per baris barang — ikut refresh saat customer diganti & barang dipilih; harga di bawah pagar diberi border/label merah; (2) submit tertahan server (butuh_konfirmasi_harga) → dialog konfirmasi berisi rincian pagar & sumbernya, setuju → submit ulang dengan konfirmasi_harga=true, batal → tidak ada yang tersimpan; pasangan Sales.gs v2026.09.01-1, Pricelist.gs v2026.09.01-3 & Code.gs v2026.09.01-4] (sebelumnya v2026.09.01-4) [F-HPPROAST: kartu Audit HPP Roast (Semua Produk) di tab Audit — tombol Jalankan Audit (tabel batch menyimpang: jenis MULTI-ROAST/TIDAK-KONSISTEN, roast, produksi benar, HPP tersimpan vs seharusnya) + tombol Koreksi HPP Roast dengan konfirmasi (MENULIS, backup per baris); pasangan StockLogic.gs v2026.09.01-4 & Code.gs v2026.09.01-3] (sebelumnya v2026.09.01-3) [F-RESEP105FE: dropdown form transaksi (Assembly/Pembelian/Penjualan/resep/bahan HB) menyaring produk & kemasan berstatus Nonaktif; opProduk/movProduk sengaja dikecualikan karena opname/koreksi sah untuk produk nonaktif — pasangan Master.gs v2026.09.01-2 (GB07 & RB07 nonaktif)] [F-PLBULAT: harga jual pricelist dibulatkan KE ATAS ke kelipatan Rp 10.000 (bulatKeAtas10Ribu_ — pasangan Pricelist.gs v2026.09.01-2), di tabel maupun hitung ulang edit markup] [F-PLB2B: kolom Harga B2B (-10%) & B2B+ (-15%), dibulatkan ke atas ke Rp 10.000, ikut tersimpan ke Price_List; tabel jadi 11 kolom] [F-PLCETAKFILTER: Cetak Pricelist mengikuti filter aktif (Kategori + Cari) — filter Produk Kopi berarti hanya Produk Kopi yang tercetak; cetakan menampilkan kolom B2B/B2B+ dan label filter] [F-HPPSUMBER: kolom Sumber HPP baru di tabel Pricelist (nama sumber + referensi/batch + tanggal + tanda diskala dari SKU lain bila HPP menyeberang ukuran — pasangan Pricelist.gs v2026.08.31-1 & Reports.gs v2026.08.31-1); sumber ikut tersimpan ke sheet Price_List; tabel jadi 9 kolom] [F-REFIX2: tombol Normalisasi Ref PEN Lama di kartu Audit Sinkron Stok (dengan konfirmasi — MENULIS; baris ambigu/tanpa dokumen ditampilkan untuk putusan manual); pasangan StockLogic.gs v2026.08.27-6 & Code.gs v2026.08.27-9] [F-STOKSYNC: kartu Audit Sinkron Stok di tab Audit — per produk: A (Σ sheet Stock_Movement) vs B (replay dokumen sumber) vs C (sheet Laporan Stock), selisih A−B dimerahkan + tabel baris movement non-opname penyebabnya; pasangan StockLogic.gs v2026.08.27-5 & Code.gs v2026.08.27-8] [F-HPPKONTRA: tombol "Koreksi HPP Kontradiktif" di kartu Audit HPP Pricelist (dengan konfirmasi — MENULIS koreksi, backup per baris); pasangan StockLogic.gs v2026.08.27-4 & Code.gs v2026.08.27-7] [F-HPPPRICECEK: kartu Audit HPP Pricelist di tab Audit — bandingkan HPP per kg antar-ukuran produk yang sama (selisih >15% dimerahkan), tiap baris menampilkan sumber (batch/tanggal/qty/total biaya) supaya penyebab langsung ketemu; pasangan Reports.gs v2026.08.27-6 & Code.gs v2026.08.27-6] [F-PLKATEGORI: tab Pricelist dapat dropdown Filter Kategori (otomatis terisi dari kategori hasil generate, bekerja bareng kotak Cari) + kolom Kategori di tabel; pasangan Pricelist.gs v2026.08.27-1] [F-AUDITSUSUT-v3: kartu Audit Penyusutan kini menampilkan tabel RATA-RATA SUSUT PER PRODUK (semua produk roasting, diurut susut tertinggi, selisih >10 poin dimerahkan) di samping tabel temuan; pasangan StockLogic.gs v2026.08.27-3] [F-RASIOLABA-v3: tabel kedua PER BULAN di kartu Rasio Laba — baris komponen × kolom bulan, isi % dari Revenue bulan itu (tren antar-bulan); pasangan Reports.gs v2026.08.27-4] [F-RASIOLABA-v2: Marketing DIPISAH jadi baris tersendiri — baris Biaya Operasional kini non-marketing; pasangan Reports.gs v2026.08.27-3] [F-RASIOLABA: kartu Rasio Laba di tab Audit — Revenue/HPP/Biaya Operasional/Marketing/Lain-lain/Pajak/Laba Bersih + %% dari Revenue (nett margin), kumulatif Jan 2026 s/d sekarang; daftar akun marketing ditampilkan; pasangan Reports.gs v2026.08.27-2 & Code.gs v2026.08.27-5] [F-AUDITSUSUT-v2: kartu Audit Penyusutan kini menjelaskan batch PENGEMASAN tidak dinilai (satuan beda kg vs bungkus) dan tercatat 0% impor dianggap "tidak tercatat"; pasangan StockLogic.gs v2026.08.27-2] [F-AUDITSUSUT: kartu Audit Penyusutan di tab Audit — tabel temuan (klasifikasi/batch/susut real vs tercatat/selisih), TRANSAKSI-APLIKASI dimerahkan; pasangan StockLogic.gs v2026.08.27-2 & Code.gs v2026.08.27-4] [F-RIWAYATSALES+F-RIWAYATBELI: placeholder mengikuti riwayat — salesman Penjualan menampilkan "Terakhir dilayani: X" per customer (tidak menimpa isian), harga satuan Pembelian menampilkan "Terakhir beli dari supplier: Rp X" per supplier+barang dengan fallback rata-rata historis; pasangan Sales.gs/Purchasing.gs v2026.08.27-1 & Code.gs v2026.08.27-3] [F-TRIGHARIAN: tombol Perbaiki Trigger di kartu status Audit (pasangan Reports.gs v2026.08.27-1) — hapus SEMUA trigger GL lama + buat trigger tiap-1-menit baru; pesan detak mati kini mengarah ke tombol ini] [REBASE: basis dialihkan ke file LIVE user (v2026.08.22-4 + GUARD TOKEN AKSES PORTAL QSystem — gerbang token sekali-pakai 60 dtk dipertahankan utuh, TIDAK disentuh); seluruh fitur v5/v6/v7 diterapkan ulang di atasnya: F-HARGARIWAYAT (harga riwayat customer+barang, mode peta 1 panggilan), F-LOADINGBOCOR (overlay naik sekali per panggilan), F-ALERTLENGKET (danger tidak auto-hilang), F-MEMUATGAGAL (4 tab laporan anti "Memuat..." abadi), F-GLANTRE (kartu Status Sheet Live di Audit + getBukuBesar 180s)] (sebelumnya v2026.08.22-4)
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- ============================================================
      BARU (2026-08-22): GUARD TOKEN AKSES PORTAL -- mencegah halaman
      ini dibuka LANGSUNG (bookmark/link lama) tanpa lewat tombol
@@ -410,6 +410,7 @@ localStorage.removeItem(CACHE_KEY + 'allstock_lokal');
 localStorage.removeItem(CACHE_KEY + 'breakdown_lokal');
 hppCache = {}; // [F-CACHEBATAL] cache batch/HPP/sisa stok di memori ikut dibuang
 stockCache = null; // [F-BATCHSPLIT] saldo di memori ikut dibuang — tanpa ini validator qty masih menjepit ke saldo lama setelah assembly baru
+masterProdukStockMap = null; // [F-MDCEPAT] peta stok di daftar Master Data ikut dibasi — transaksi stok mengubah saldo
 }
 // [F-BATALSTOK] Reset SEMUA state stok frontend setelah transaksi yang
 // mengubah stok dibatalkan. localStorage saja tidak cukup: stockCache hidup
@@ -2120,6 +2121,27 @@ if (lbl && lbl.dataset.wasMandatory === 'true') { lbl.classList.add('mandatory-l
 }
 });
 }
+// [F-SAMPLEHPP] Sample: harga satuan & total dinonaktifkan + tanda wajib
+// dicabut — nilai biaya sample di GL dihitung backend dari HPP × qty
+// (Sales.gs F-SAMPLEHPP), bukan dari form. Pola sama seperti
+// applySewaFieldRules: tanda wajib dikembalikan saat keluar mode Sample.
+function applySampleFieldRules_(id, keSample) {
+['pen-price', 'pen-total'].forEach(p => {
+const f = document.getElementById(`${p}-${id}`);
+if (!f) return;
+const grp = f.closest('.form-group');
+const lbl = grp ? grp.querySelector('label') : null;
+if (keSample) {
+f.value = '';
+f.disabled = true;
+if (lbl && lbl.classList.contains('mandatory-label')) { lbl.dataset.wasMandatorySample = 'true'; lbl.classList.remove('mandatory-label'); }
+if (p === 'pen-price') { const note = document.getElementById(`pen-pagar-${id}`); if (note) note.textContent = ''; }
+} else {
+f.disabled = false;
+if (lbl && lbl.dataset.wasMandatorySample === 'true') { lbl.classList.add('mandatory-label'); delete lbl.dataset.wasMandatorySample; }
+}
+});
+}
 function addPenjualanDetail() {
 const id = penjualanDetails.length;
 const div = document.createElement('div'); div.className = 'detail-row'; div.id = `pen-detail-${id}`;
@@ -2131,6 +2153,9 @@ penjualanDetails.push(id);
 // aturan Sewa (kemasan & batch kosong + tidak mandatory).
 const kodePenAdd = ((document.getElementById('penKodeTransaksi') || {}).value || '').toLowerCase();
 if (kodePenAdd === 'sewa') applySewaFieldRules(id, true);
+// [F-SAMPLEHPP] Baris baru saat mode Sample langsung mengikuti aturan
+// Sample (harga satuan & total nonaktif + tidak mandatory).
+if (kodePenAdd === 'sample') applySampleFieldRules_(id, true);
 }
 function removePenjualanDetail(id) { const el = document.getElementById(`pen-detail-${id}`); if (el) el.remove(); penjualanDetails = penjualanDetails.filter(i => i !== id); calculatePenjualanSummary(); }
 // [F-HARGARIWAYAT] Ambil harga dari riwayat customer+barang (tertinggi).
@@ -2186,6 +2211,17 @@ refreshPagarBaris_(penjualanDetails); // [F-PAGARHARGA] pagar mengikuti customer
 // (Sales.gs hitungPagarHargaMap_). Gagal jaringan → catatan dibiarkan,
 // pagar sesungguhnya tetap dijaga server saat submit.
 async function refreshPagarBaris_(ids) {
+// [F-SAMPLEHPP] Sample tidak punya pagar harga (dikecualikan backend) —
+// bersihkan catatan pagar per baris & skip panggilan server.
+if (((document.getElementById('penKodeTransaksi') || {}).value || '').toLowerCase() === 'sample') {
+(ids || []).forEach(rid => {
+const note = document.getElementById(`pen-pagar-${rid}`);
+if (note) note.textContent = '';
+const priceInput = document.getElementById(`pen-price-${rid}`);
+if (priceInput) { priceInput.dataset.pagar = ''; priceInput.style.borderColor = ''; }
+});
+return;
+}
 const items = [];
 (ids || []).forEach(rid => {
 const b = document.getElementById(`pen-barang-${rid}`);
@@ -2220,7 +2256,9 @@ const barangInput = document.getElementById(`pen-barang-${id}`);
 const sku = barangInput?.dataset.value;
 if (!sku) return;
 const pembayaranSection = document.getElementById('penPembayaranSection');
-if (pembayaranSection && pembayaranSection.style.display === 'none') pembayaranSection.style.display = '';
+// [F-SAMPLEHPP] mode Sample: section pembayaran tetap tersembunyi.
+const kodeHppSekarang = ((document.getElementById('penKodeTransaksi') || {}).value || '').toLowerCase();
+if (kodeHppSekarang !== 'sample' && pembayaranSection && pembayaranSection.style.display === 'none') pembayaranSection.style.display = '';
 // Cek cache dulu
 const now = Date.now();
 let result, priceResult, batchResult, stockResult;
@@ -2837,6 +2875,7 @@ printInvoice(saleData);
 function onPenKodeTransaksiChange() {
 const kodeBaru = ((document.getElementById('penKodeTransaksi') || {}).value || '').toLowerCase();
 const keSewa = kodeBaru === 'sewa';
+const keSample = kodeBaru === 'sample'; // [F-SAMPLEHPP]
 penjualanDetails.forEach(id => {
 const brg = document.getElementById(`pen-barang-${id}`);
 if (brg) { brg.value = ''; brg.dataset.value = ''; }
@@ -2860,7 +2899,17 @@ if (f) { f.disabled = false; if (p === 'pen-qty') f.removeAttribute('max'); }
 // [F6-44] Masuk Sewa: kemasan & batch dikosongkan + tidak mandatory;
 // keluar Sewa: tanda wajib dikembalikan.
 applySewaFieldRules(id, keSewa);
+// [F-SAMPLEHPP] Masuk Sample: harga satuan & total nonaktif + tidak
+// mandatory; keluar Sample: dikembalikan seperti semula.
+applySampleFieldRules_(id, keSample);
 });
+// [F-SAMPLEHPP] Section pembayaran disembunyikan untuk Sample — tidak ada
+// uang diterima (backend memaksa type_pembayaran 'Sample'). Barang selalu
+// dikosongkan saat ganti kode (lihat atas), jadi keluar Sample pun section
+// tetap tersembunyi sampai barang dipilih lagi — calculatePenjualanHPP
+// yang menampilkannya (kecuali mode Sample).
+const secBayar = document.getElementById('penPembayaranSection');
+if (secBayar) secBayar.style.display = 'none';
 }
 // FIX #2: Clear penTypeBayar properly on reset
 function clearPenjualanForm() {
@@ -3361,8 +3410,8 @@ document.getElementById('mdResepProdukJadi').dataset.value = '';
 document.getElementById('mdResepBahanRows').innerHTML = '';
 addResepBahanRow();
 localStorage.removeItem(CACHE_KEY + jenis);
-await loadMasterData();
-loadMasterDataList();
+// [F-MDCEPAT] resep juga refresh di latar — tombol langsung pulih
+loadMasterData().then(() => loadMasterDataList()).catch(() => {});
 } else {
 showAlert('danger', 'Gagal: ' + (failMessages.join('; ') || 'tidak ada bahan diisi'), 'masterDataAlert');
 }
@@ -3437,8 +3486,11 @@ document.querySelectorAll('#md-fields-' + jenis + ' input').forEach(el => el.val
 if (jenis === 'Master_Produk') { document.getElementById('mdProdukKategoriBaruGroup').style.display = 'none'; }
 document.getElementById('mdResepProdukJadi').dataset.value = '';
 localStorage.removeItem(CACHE_KEY + jenis);
-await loadMasterData();
-loadMasterDataList();
+// [F-MDCEPAT] refresh daftar di LATAR BELAKANG — jangan di-await: tombol
+// langsung pulih & pesan sukses langsung tampil. Dulu menunggu
+// loadMasterDataList yang memanggil getAllStock (ledger penuh, batas 120
+// detik) — akar "tambah produk baru lama sekali".
+loadMasterData().then(() => loadMasterDataList()).catch(() => {});
 } else {
 showAlert('danger', 'Gagal: ' + result.message, 'masterDataAlert');
 }
@@ -3454,7 +3506,10 @@ if (jenis === 'Master_Produk') {
 // [F6-37 P2] Kolom stok ditampilkan dari stok HITUNGAN mesin (getAllStock)
 // — satu pintu dengan tab Stock. Angka kolom 'stok' di sheet Master_Produk
 // bukan sumber kebenaran dan tidak pernah diubah mesin stok.
-masterProdukStockMap = null;
+// [F-MDCEPAT] peta stok DIPAKAI ULANG selama belum dibasi — tambah/edit
+// master TIDAK mengubah stok. bustStockLokal_ (dipanggil setiap transaksi
+// stok) men-null-kan peta ini, baru saat itulah getAllStock dipanggil lagi.
+if (!masterProdukStockMap) {
 try {
 const stRes = await callGAS('getAllStock', {}, 120000, { silent: true });
 if (stRes.success) {
@@ -3462,6 +3517,7 @@ masterProdukStockMap = {};
 stRes.data.forEach(s => { masterProdukStockMap[(s.id_produk || '').toString()] = parseFloat(s.saldo) || 0; });
 }
 } catch (eS) { }
+}
 populateMdKategori();
 }
 renderMasterDataList();
